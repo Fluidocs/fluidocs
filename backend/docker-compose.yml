@@ -1,0 +1,22 @@
+services:
+  api:
+    container_name: fluidocs-api
+    build: 
+      context: .
+      dockerfile: .docker/Dockerfile
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT}:8000"
+    volumes:
+      - .:/app
+      - /app/.venv
+    networks:
+      - fluidocs_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  fluidocs_network:
+    driver: bridge
