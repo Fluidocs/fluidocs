@@ -13,12 +13,12 @@ class ModeloEmbeddings:
                 if cls._instancia is None:
                     try:
                         modelo = SentenceTransformer(
-                            config.hf_modelo,
+                            config.hf_model,
                             local_files_only=True
                         )
-                    except Exception:
+                    except OSError:
                         modelo = SentenceTransformer(
-                            config.hf_modelo,
+                            config.hf_model,
                             local_files_only=False
                         )
 

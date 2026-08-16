@@ -34,19 +34,14 @@ async def criar_indice(
     data: CreateIndiceRequest,
     servico: ServicoIndices = Depends(obter_servico_indices)
 ) -> BaseResponse[CreateIndiceResponse]:
-    response = await servico.criar_indice(data)
-
-    if response is None:
-        raise HTTPException(
-            status_code=409, 
-            detail={
-                'message': 'Esse índice já existe.'
-            }
-        )
+    await servico.criar_indice(data)
 
     return {
         'meta': { 'status_code': 201 },
-        'dados': response
+        'dados': {
+            'nome_indice': data.nome_indice,
+            'tipo_mapping': data.tipo_mapping
+        }
     }
 
 
@@ -59,20 +54,11 @@ async def deletar_indice(
     nome_indice: Annotated[str, Path(min_length=3)],
     servico: ServicoIndices = Depends(obter_servico_indices)
 ) -> BaseResponse[DestroyIndiceResponse]:
-    deleted = await servico.deletar_indice(nome_indice)
-
-    if not deleted:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                'message': 'Índice não encontrado.'
-            }
-        )
+    await servico.deletar_indice(nome_indice)
 
     return {
         'dados': {
             'nome_indice': nome_indice,
-            'message': 'Índice excluído com sucesso!'
         }
     }
     

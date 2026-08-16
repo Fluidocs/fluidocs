@@ -6,6 +6,7 @@ from .configuracoes import config
 from backend.api.schemas.routes.base_response import BaseResponse
 from backend.api.schemas.routes.health_response import HealthResponse
 from backend.api.routes.router import build_router
+from backend.api.handlers import registrar_exception_handlers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,6 +31,8 @@ def inicializar_app() -> FastAPI:
         version='1.0',
         lifespan=lifespan
     )
+
+    registrar_exception_handlers(app)
 
     @app.get("/health", response_model=BaseResponse[HealthResponse])
     async def health():

@@ -1,26 +1,36 @@
-from typing import Any
-from elasticsearch import AsyncElasticsearch, NotFoundError, BadRequestError
-from fastapi import HTTPException
+from typing import List
+from elasticsearch import (
+    AsyncElasticsearch, 
+    NotFoundError, 
+    BadRequestError
+)
 
-from backend.domain.indices.mapping.mapping_factory import MappingFactory
 from backend.api.schemas.routes.indexacao.indices_request import CreateIndiceRequest
-
+from backend.domain.indices.mapping.mapping_factory import MappingFactory
+from backend.domain.indices.exceptions import *
+from backend.api.helpers.pesquisa import tratar_motor_pesquisa
 
 class ServicoIndices:
     def __init__(self, cliente: AsyncElasticsearch):
         self._cliente = cliente
 
 
-    async def listar_indices(self):
+    @tratar_motor_pesquisa
+    async def listar_indices(self) -> List[str]:
         indices = await self._cliente.indices.get_alias(index='*')
 
         return sorted(indices.keys()) 
 
 
+    @tratar_motor_pesquisa
     async def criar_indice(
         self, 
         params: CreateIndiceRequest
-    ) -> dict[str, Any] | None:
+    ) -> None:
+        exists = await self._cliente.indices.exists(index=params.nome_indice)
+        if exists: 
+            raise IndiceExistenteError(params.nome_indice)
+        
         strategy = MappingFactory.get(
             tipo=params.tipo_mapping,
             numero_shards=params.configuracao.numero_shards,
@@ -30,43 +40,26 @@ class ServicoIndices:
         )
         body = strategy.construir()
 
-        
         await self._cliente.indices.create(
             index=params.nome_indice,
             body=body
         )
 
-        # [TODO] Service não deveria conhecer a resposta HTTP
-        return {
-            'nome_indice': params.nome_indice,
-            'tipo_mapping': params.tipo_mapping,
-            'message': 'Índice criado com sucesso!' 
-        }
 
-
-    # [TODO] Service não deveria conhecer o erro da camada HTTP
+    @tratar_motor_pesquisa
     async def deletar_indice(
         self, 
         nome_indice: str
-    ) -> bool:
+    ) -> None:
         try:
             await self._cliente.indices.delete(
                 index=nome_indice
             )
-
-            return True
-        except NotFoundError:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    'message': 'Índice não encontrado.',
-                    'nome_indice': nome_indice
-                }
-            )
-        except BadRequestError:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    'message': 'A configuração do índice é inválida.'
-                }
-            )
+        except NotFoundError as error:
+            raise IndiceNaoEncontradoError(
+                nome_indice
+            ) from error
+        except BadRequestError as error:
+            raise ConfiguracaoInvalidaError(
+                nome_indice
+            ) from error
