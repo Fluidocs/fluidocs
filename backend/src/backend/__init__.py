@@ -1,6 +1,6 @@
 import uvicorn
 from backend.config.configuracoes import config
-from backend.config.inicializacao import inicializar_app
+from backend.config import inicializar_app
 
 
 def main() -> None:

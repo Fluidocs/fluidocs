@@ -11,8 +11,6 @@ class Configuracoes(BaseSettings):
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'
-    es_shards_number: int = 1
-    es_replicas_number: int = 0
 
     # ** HUGGING_FACE **
     hf_token: str

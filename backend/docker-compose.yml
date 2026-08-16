@@ -12,10 +12,38 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     networks:
       - fluidocs_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-wolfi:9.3.1
+    container_name: es-fluidocs
+    environment:
+      - node_name=es01
+      - cluster_name=es-docker-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    networks:
+      - fluidocs_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  elastic_data:
 
 networks:
   fluidocs_network:

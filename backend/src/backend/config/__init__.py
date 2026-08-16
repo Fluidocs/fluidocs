@@ -1,19 +1,24 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from elasticsearch import AsyncElasticsearch
 
 from .configuracoes import config
-from backend.api.schemas.base_response import BaseResponse
-from backend.api.schemas.health_response import HealthResponse
+from backend.api.schemas.routes.base_response import BaseResponse
+from backend.api.schemas.routes.health_response import HealthResponse
+from backend.api.routes.router import build_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # [TODO] Elasticsearch Assíncrono
+    main_es_client = AsyncElasticsearch(config.elastic_url)
+    app.state.elasticsearch = main_es_client
 
     # [TODO] Modelo de Embeddings
 
     # [TODO] Adicionar aerich (conexão com o banco)
 
     yield
+
+    await main_es_client.close()
 
 def inicializar_app() -> FastAPI:
     app = FastAPI(
@@ -31,5 +36,10 @@ def inicializar_app() -> FastAPI:
         return {
             'dados': { 'status_code': 200 }
         }
+
+    app.include_router(
+        build_router(),
+        prefix='/api'
+    )
 
     return app
