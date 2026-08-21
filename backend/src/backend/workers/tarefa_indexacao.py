@@ -1,0 +1,1 @@
+# [TODO] Implementar Worker para indexação em lote e indexação de arquivo único

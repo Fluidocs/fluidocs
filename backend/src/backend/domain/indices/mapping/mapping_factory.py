@@ -1,7 +1,7 @@
 from typing import Any
 
-from .base_strategy import MappingBase
-from .documentos_strategy import DocumentosStrategy
+from .strategy.base_strategy import MappingBase
+from .strategy.documentos_strategy import DocumentosStrategy
 from .tipo_mapping import TipoMapping
 
 class MappingFactory:

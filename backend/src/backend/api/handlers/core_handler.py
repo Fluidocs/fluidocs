@@ -8,7 +8,7 @@ async def pesquisa_indisponivel_handler(
     erro: MotorPesquisaIndisponivelError
 ) -> JSONResponse:
     return JSONResponse(
-        status_code=400,
+        status_code=503,
         content={
             'detail': {
                 'message': str(erro)

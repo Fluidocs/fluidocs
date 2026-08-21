@@ -6,16 +6,22 @@ class Configuracoes(BaseSettings):
     debug: bool = False
     server_host: str = '0.0.0.0'
     server_port: int = 8000
+    temp_docs_path: str = '/tmp/docs'
+    tamanho_bloco_upload: int = 1024
+    celery_worker_concurrency: int = 1
 
     # [TODO] Adicionar configurações de conexão com o banco local do middleware
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'
 
-    # ** HUGGING_FACE **
-    hf_token: str
-    hf_model: str = 'intfloat/multilingual-e5-base'
-    hf_dimensionamento: int = 768
+    # ** OLLAMA **
+    ollama_host: str = 'http://ollama:11434'
+    embeddings_model: str = 'qwen3-embedding:0.6b'
+    embeddings_dims: int = 1024
+
+    # ** REDIS **
+    redis_url: str = 'redis://redis:6379'
 
     # ** AMBIENTE **
     @field_validator('debug', mode='before')

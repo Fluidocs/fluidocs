@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from elasticsearch import AsyncElasticsearch
+from ollama import AsyncClient
 
 from .configuracoes import config
 from backend.api.schemas.routes.base_response import BaseResponse
@@ -13,13 +14,15 @@ async def lifespan(app: FastAPI):
     main_es_client = AsyncElasticsearch(config.elastic_url)
     app.state.elasticsearch = main_es_client
 
-    # [TODO] Modelo de Embeddings
+    ai_models_client = AsyncClient(config.ollama_host)
+    app.state.ollama = ai_models_client
 
     # [TODO] Adicionar aerich (conexão com o banco)
 
     yield
 
     await main_es_client.close()
+    await ai_models_client.close()
 
 def inicializar_app() -> FastAPI:
     app = FastAPI(

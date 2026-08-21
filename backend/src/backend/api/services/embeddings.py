@@ -1,24 +1,31 @@
-from backend.config.singleton.modelo_embedding import ModeloEmbeddings
-from typing import Union, List
+from ollama import AsyncClient, Client
+from typing import List
 
 class ServicoEmbeddings:
-    @classmethod
-    def _modelo(cls):
-        return ModeloEmbeddings.get()
+    def __init__(self, client: AsyncClient, model: str):
+        self._client = client
+        self._model = model
 
-    @classmethod
-    def gerar_embeddings(cls, texto: Union[str, List[str]], tamanho_lote: int = 32, pesquisa:bool = True) -> List[float]:
-        prefixo: str = 'query: ' if pesquisa else 'passage: '
 
-        texto_com_prefixo = ''
-        if isinstance(texto, str):
-            texto_com_prefixo = f'{prefixo}{texto}'
-        else:
-            texto_com_prefixo = [f'{prefixo}{t}' for t in texto]
-
-        return cls._modelo().encode(
-            texto_com_prefixo, 
-            batch_size=tamanho_lote, 
-            show_progress_bar=False,
-            normalize_embeddings=True
+    async def async_embed(
+        self, 
+        data: str | List[str]
+    ) -> List[float]:
+        response = await self._client.embed(
+            model=self._model,
+            input=data
         )
+
+        return response.embeddings[0]
+
+    def embed(
+        self,
+        client: Client,
+        data: str | List[str]
+    ) -> List[float]:
+        response = client.embed(
+            model=self._model,
+            input=data
+        )
+
+        return response.embeddings[0]

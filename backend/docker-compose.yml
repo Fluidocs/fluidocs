@@ -1,6 +1,7 @@
 services:
   api:
     container_name: fluidocs-api
+    image: fluidocs-api:dev
     build: 
       context: .
       dockerfile: .docker/Dockerfile
@@ -15,6 +16,10 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
     networks:
       - fluidocs_network
     extra_hosts:
@@ -42,8 +47,59 @@ services:
       retries: 10
       start_period: 20s
 
+  ollama:
+    image: ollama/ollama
+    container_name: fluidocs-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - fluidocs_network
+
+  celery-worker:
+    image: fluidocs-api:dev
+    container_name: elastic-worker
+    command: uv run celery -A backend.workers.app_celery worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-1}
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/.venv
+      - temp_data:/tmp/docs
+    depends_on:
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - fluidocs_network
+
+  redis:
+    image: redis:8.6.2-alpine
+    container_name: fluidocs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fluidocs_network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   elastic_data:
+  ollama_data:
+  redis_data:
+  temp_data:
 
 networks:
   fluidocs_network:

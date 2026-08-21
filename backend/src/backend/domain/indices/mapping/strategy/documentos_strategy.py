@@ -57,9 +57,10 @@ class DocumentosStrategy(MappingBase):
                     "nome_documento": {
                         "type": "keyword",
                     },
-                    "id_repositorio": {
-                        "type": "keyword",
-                    },
+                    # ainda não mapeado pra linkar com persistência no banco
+                    #"id_repositorio": {
+                    #    "type": "keyword",
+                    #},
                     "tipo_documento": {
                         "type": "keyword",
                     },
@@ -72,7 +73,7 @@ class DocumentosStrategy(MappingBase):
                     },
                     "embeddings": {
                         "type": "dense_vector",
-                        "dims": config.hf_dimensionamento,
+                        "dims": config.embeddings_dims,
                         "similarity": "cosine",
                         "index": True,
                     },
