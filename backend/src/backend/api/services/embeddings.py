@@ -18,6 +18,7 @@ class ServicoEmbeddings:
 
         return response.embeddings[0]
 
+
     def embed(
         self,
         client: Client,

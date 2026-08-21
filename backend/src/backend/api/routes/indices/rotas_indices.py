@@ -10,6 +10,7 @@ from backend.api.schemas.routes.indexacao.indices_response import CreateIndiceRe
 
 indices_router = APIRouter(tags=['indices'])
 
+# [TODO] Adicionar listagem por model (armazenar configurações)
 @indices_router.get(
     '/',
     status_code=200,
@@ -25,6 +26,7 @@ async def listar_indices(
     }
 
 
+# [TODO] Adicionar model e bloqueio de criação por limite no usuário (3 indices)
 @indices_router.post(
     '/',
     status_code=201,

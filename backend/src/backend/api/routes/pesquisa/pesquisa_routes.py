@@ -10,6 +10,8 @@ pesquisa_router = APIRouter(
     tags=['pesquisa']
 )
 
+
+# [TODO] Adicionar filtros, limitação por usuário e etc...
 @pesquisa_router.post(
     path='/pesquisar',
     status_code=200,
