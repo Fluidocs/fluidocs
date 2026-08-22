@@ -5,8 +5,8 @@ from typing import Annotated
 from backend.api.helpers.indices import obter_servico_indices
 from backend.api.services.indices import ServicoIndices
 from backend.api.schemas.routes.base_response import BaseResponse
-from backend.api.schemas.routes.indexacao.indices_request import CreateIndiceRequest
-from backend.api.schemas.routes.indexacao.indices_response import CreateIndiceResponse, DestroyIndiceResponse
+from backend.api.schemas.routes.indices.indices_request import CreateIndiceRequest
+from backend.api.schemas.routes.indices.indices_response import CreateIndiceResponse, DestroyIndiceResponse
 
 indices_router = APIRouter(tags=['indices'])
 
@@ -47,6 +47,7 @@ async def criar_indice(
     }
 
 
+# [TODO] Adicionar model pra exclusão
 @indices_router.delete(
     '/{nome_indice}',
     status_code=200,

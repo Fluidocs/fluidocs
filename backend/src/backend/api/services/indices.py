@@ -5,7 +5,7 @@ from elasticsearch import (
     BadRequestError
 )
 
-from backend.api.schemas.routes.indexacao.indices_request import CreateIndiceRequest
+from backend.api.schemas.routes.indices.indices_request import CreateIndiceRequest
 from backend.domain.indices.mapping.mapping_factory import MappingFactory
 from backend.domain.indices.exceptions import *
 from backend.api.helpers.pesquisa import tratar_motor_pesquisa
