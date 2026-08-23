@@ -8,6 +8,9 @@ class Configuracoes(BaseSettings):
     server_port: int = 8000
     temp_docs_path: str = '/tmp/docs'
     tamanho_bloco_upload: int = 1024
+    tamanho_trecho: int = 1000
+    sobreposicao_trecho: int = 100
+    tamanho_lote_indexacao: int = 32
     celery_worker_concurrency: int = 1
 
     # [TODO] Adicionar configurações de conexão com o banco local do middleware

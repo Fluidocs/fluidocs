@@ -1,5 +1,5 @@
 from .base_strategy import StrategyExtracaoBase
-from .extracao_factory import FactoryExtracao
+from ..extracao_factory import FactoryExtracao
 from typing import List
 
 @FactoryExtracao.registrar('txt')

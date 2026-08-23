@@ -1,7 +1,9 @@
-import pkgutil, importlib
+import importlib
+import pkgutil
 from pathlib import Path
 from typing import Dict, Type
-from .base_strategy import StrategyExtracaoBase
+
+from .strategy.base_strategy import StrategyExtracaoBase
 
 class FactoryExtracao:
     _estrategias: Dict[str, Type[StrategyExtracaoBase]] = {}
@@ -28,11 +30,14 @@ class FactoryExtracao:
 
     @classmethod
     def carregar_extratores(cls):
-        """Varre o diretório atual e importa módulos para disparar o decorator @registrar."""
-        caminho_atual = Path(__file__).parent
-        
-        for _, nome_modulo, _ in pkgutil.iter_modules([str(caminho_atual)]):
-            if nome_modulo not in ["fabrica_extracao", "base"]:
-                importlib.import_module(f".{nome_modulo}", package=__package__)
+        """Importa as strategies para executar seus decorators de registro."""
+        caminho_strategies = Path(__file__).parent / 'strategy'
+
+        for _, nome_modulo, _ in pkgutil.iter_modules([str(caminho_strategies)]):
+            if nome_modulo.startswith('strategy_extracao_'):
+                importlib.import_module(
+                    f'.strategy.{nome_modulo}',
+                    package=__package__,
+                )
 
 FactoryExtracao.carregar_extratores()

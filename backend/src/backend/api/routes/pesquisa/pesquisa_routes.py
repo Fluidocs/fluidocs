@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from time import perf_counter
 
 from backend.api.schemas.routes.pesquisa.pesquisa_request import PesquisaRequest
 from backend.api.schemas.routes.pesquisa.pesquisa_response import DocumentoPesquisaResponse
@@ -21,9 +22,11 @@ async def pesquisar(
     dados: PesquisaRequest,
     servico_pesquisa: ServicoPesquisa = Depends(obter_servico_pesquisa)
 ) -> BaseResponse[list[DocumentoPesquisaResponse]]:
+    inicio = perf_counter()
     response = await servico_pesquisa.pesquisar_async(dados)
 
     return {
-       'dados': response.documentos,
-       'paginacao': response.paginacao
+        'meta': { 'tempo_execucao': perf_counter() - inicio },
+        'dados': response.documentos,
+        'paginacao': response.paginacao
     }
