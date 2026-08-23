@@ -1,10 +1,17 @@
-from .base_strategy import StrategyExtracaoBase
-from ..extracao_factory import FactoryExtracao
-
-import cv2, pytesseract
+import cv2
 import numpy as np
+import pytesseract
 
-@FactoryExtracao.registrar('png', 'jpg', 'jpeg')
+from ..extracao_factory import FactoryExtracao
+from ..tipos import FormatoArquivo
+from .base_strategy import StrategyExtracaoBase
+
+
+@FactoryExtracao.registrar(
+    FormatoArquivo.PNG,
+    FormatoArquivo.JPG,
+    FormatoArquivo.JPEG,
+)
 class StrategyExtracaoImg(StrategyExtracaoBase):
     @classmethod
     def extrair_conteudo(cls, caminho: str) -> str:

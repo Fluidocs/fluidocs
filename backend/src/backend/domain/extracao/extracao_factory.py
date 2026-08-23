@@ -1,35 +1,39 @@
 import importlib
 import pkgutil
 from pathlib import Path
-from typing import Dict, Type
 
+from .tipos import FormatoArquivo
 from .strategy.base_strategy import StrategyExtracaoBase
 
+
 class FactoryExtracao:
-    _estrategias: Dict[str, Type[StrategyExtracaoBase]] = {}
+    _estrategias: dict[FormatoArquivo, type[StrategyExtracaoBase]] = {}
 
     @classmethod
-    def registrar(cls, *extensoes: str):
-        def wrapper(subclasse: Type[StrategyExtracaoBase]):
-            for ext in extensoes:
-                cls._estrategias[ext.lower().lstrip('.')] = subclasse
+    def registrar(cls, *formatos: FormatoArquivo):
+        def wrapper(
+            subclasse: type[StrategyExtracaoBase],
+        ) -> type[StrategyExtracaoBase]:
+            for formato in formatos:
+                cls._estrategias[formato] = subclasse
             return subclasse
+
         return wrapper
 
+    @classmethod
+    def create(cls, formato: FormatoArquivo | str) -> StrategyExtracaoBase:
+        try:
+            formato_arquivo = FormatoArquivo(str(formato).lower().lstrip('.'))
+            estrategia = cls._estrategias[formato_arquivo]
+        except (KeyError, ValueError) as erro:
+            raise ValueError(
+                f'Formato de arquivo não suportado: {formato}'
+            ) from erro
+
+        return estrategia()
 
     @classmethod
-    def create(cls, extensao: str) -> Type[StrategyExtracaoBase]:
-        ext = extensao.lower().lstrip('.')
-        estrategia = cls._estrategias.get(ext)
-
-        if not estrategia:
-            raise ValueError(f'Formato de arquivo não suportado: {extensao}')
-
-        return estrategia
-
-
-    @classmethod
-    def carregar_extratores(cls):
+    def carregar_extratores(cls) -> None:
         """Importa as strategies para executar seus decorators de registro."""
         caminho_strategies = Path(__file__).parent / 'strategy'
 
@@ -39,5 +43,6 @@ class FactoryExtracao:
                     f'.strategy.{nome_modulo}',
                     package=__package__,
                 )
+
 
 FactoryExtracao.carregar_extratores()

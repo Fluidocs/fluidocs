@@ -3,13 +3,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 
+from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
 from backend.api.schemas.routes.indexacao import (
     IndexacaoLoteResponse,
     IndexacaoResponse,
 )
-from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
-from backend.api.services.submissao_indexacao import ServicoSubmissaoIndexacao
+from backend.api.services.indexacao.submissao_indexacao import (
+    ServicoSubmissaoIndexacao,
+)
 from backend.domain.indices.mapping.tipo_mapping import TipoMapping
 
 indexacao_router = APIRouter(tags=['indexacao'])

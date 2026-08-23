@@ -1,5 +1,3 @@
-from typing import Any
-
 from backend.domain.indices.mapping.tipo_mapping import TipoMapping
 
 from .strategy.base_strategy import IndexacaoBase
@@ -14,7 +12,7 @@ class IndexacaoFactory:
     }
 
     @classmethod
-    def get(cls, tipo: TipoMapping | str, **parametros: Any) -> IndexacaoBase:
+    def get(cls, tipo: TipoMapping | str) -> IndexacaoBase:
         try:
             tipo_mapping = TipoMapping(tipo)
             strategy_class = cls._strategies[tipo_mapping]
@@ -23,4 +21,4 @@ class IndexacaoFactory:
                 f'Tipo de indexação não suportado: {tipo}'
             ) from erro
 
-        return strategy_class(**parametros)
+        return strategy_class()

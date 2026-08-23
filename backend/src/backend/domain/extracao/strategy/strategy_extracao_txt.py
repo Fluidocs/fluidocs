@@ -1,10 +1,11 @@
-from .base_strategy import StrategyExtracaoBase
 from ..extracao_factory import FactoryExtracao
-from typing import List
+from ..tipos import FormatoArquivo
+from .base_strategy import StrategyExtracaoBase
 
-@FactoryExtracao.registrar('txt')
+
+@FactoryExtracao.registrar(FormatoArquivo.TXT)
 class StrategyExtracaoTXT(StrategyExtracaoBase):
     @staticmethod
-    def extrair_conteudo(caminho: str) -> str | List[dict]:
+    def extrair_conteudo(caminho: str) -> str:
         with open(caminho, 'r', encoding='utf-8') as arquivo:
-            return arquivo.read().strip() 
+            return arquivo.read().strip()

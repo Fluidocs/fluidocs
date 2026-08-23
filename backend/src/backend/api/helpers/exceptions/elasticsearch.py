@@ -1,5 +1,28 @@
+from collections.abc import Awaitable, Callable
+from functools import wraps
+from typing import Any, ParamSpec, TypeVar
+
 from elasticsearch import BadRequestError
-from typing import Any
+from elastic_transport import ConnectionError, ConnectionTimeout
+
+from backend.core.exceptions import MotorPesquisaIndisponivelError
+
+
+P = ParamSpec('P')
+R = TypeVar('R')
+
+
+def tratar_indisponibilidade_elasticsearch(
+    funcao: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R]]:
+    @wraps(funcao)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        try:
+            return await funcao(*args, **kwargs)
+        except (ConnectionError, ConnectionTimeout) as erro:
+            raise MotorPesquisaIndisponivelError() from erro
+
+    return wrapper
 
 
 def extrair_detalhe_elasticsearch(

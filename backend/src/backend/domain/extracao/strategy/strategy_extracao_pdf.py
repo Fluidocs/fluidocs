@@ -1,12 +1,14 @@
-from .base_strategy import StrategyExtracaoBase
-from ..extracao_factory import FactoryExtracao
-from typing import List
 import pymupdf4llm
 
-@FactoryExtracao.registrar('pdf')
+from ..extracao_factory import FactoryExtracao
+from ..tipos import FormatoArquivo
+from .base_strategy import StrategyExtracaoBase
+
+
+@FactoryExtracao.registrar(FormatoArquivo.PDF)
 class StrategyExtracaoPDF(StrategyExtracaoBase):
     @staticmethod
-    def extrair_conteudo(caminho: str) -> str | List[dict]:
+    def extrair_conteudo(caminho: str) -> str:
         markdown = pymupdf4llm.to_markdown(
             caminho,
             header=False,
@@ -16,4 +18,3 @@ class StrategyExtracaoPDF(StrategyExtracaoBase):
         )
 
         return markdown
-        
