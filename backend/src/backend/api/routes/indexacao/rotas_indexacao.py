@@ -1,13 +1,84 @@
-from fastapi import APIRouter
-from backend.api.helpers.embeddings import ServicoEmbeddings
+from time import perf_counter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, status
+
+from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
+from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
+from backend.api.schemas.routes.indexacao import (
+    IndexacaoLoteResponse,
+    IndexacaoResponse,
+)
+from backend.api.schemas.routes.indexacao import (
+    IndexacaoRequest,
+    IndexacaoLoteRequest
+)
+from backend.api.services.indexacao.submissao_indexacao import (
+    ServicoSubmissaoIndexacao,
+)
+
 
 indexacao_router = APIRouter(tags=['indexacao'])
 
-# [TODO] Implementar indexação
-# - o cara manda o tipo de index (pensando naquela ideia do documentos e dump sql)
-# - strategy escolhe o metodo
 @indexacao_router.post(
-    path='/'
+    path='/',
+    status_code=status.HTTP_201_CREATED,
+    response_model=BaseResponse[IndexacaoResponse],
+    description='Encaminha um arquivo para indexação em background.',
 )
-def indexar_arquivo():
-    pass
+async def indexar_arquivo(
+    dados: IndexacaoRequest,
+    servico: ServicoSubmissaoIndexacao = Depends(obter_servico_submissao_indexacao),
+) -> BaseResponse[IndexacaoResponse]:
+    inicio = perf_counter()
+    id_processamento, nome_arquivo = await servico.enfileirar_arquivo(
+        dados.arquivo,
+        dados.nome_indice,
+        dados.tipo_mapping,
+    )
+
+    return BaseResponse(
+        meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
+        dados=IndexacaoResponse(
+            id_processamento=id_processamento,
+            nome_arquivo=nome_arquivo,
+            nome_indice=dados.nome_indice,
+            tipo_mapping=dados.tipo_mapping,
+        ),
+    )
+
+
+@indexacao_router.post(
+    path='/lote-zip',
+    status_code=status.HTTP_201_CREATED,
+    response_model=BaseResponse[IndexacaoLoteResponse],
+    description=(
+        'Encaminha um ZIP para processamento; cada documento vira um job separado.'
+    ),
+)
+async def indexar_lote_zip(
+    dados: IndexacaoLoteRequest,
+    servico: Annotated[
+        ServicoSubmissaoIndexacao,
+        Depends(obter_servico_submissao_indexacao),
+    ]
+) -> BaseResponse[IndexacaoLoteResponse]:
+    inicio = perf_counter()
+    id_processamento, nome_arquivo, quantidade = (
+        await servico.enfileirar_lote_zip(
+            dados.arquivo_zip,
+            dados.nome_indice,
+            dados.tipo_mapping,
+        )
+    )
+
+    return BaseResponse(
+        meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
+        dados=IndexacaoLoteResponse(
+            id_processamento=id_processamento,
+            nome_arquivo=nome_arquivo,
+            nome_indice=dados.nome_indice,
+            tipo_mapping=dados.tipo_mapping,
+            quantidade_arquivos=quantidade,
+        ),
+    )

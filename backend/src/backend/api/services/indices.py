@@ -8,21 +8,23 @@ from elasticsearch import (
 from backend.api.schemas.routes.indices.indices_request import CreateIndiceRequest
 from backend.domain.indices.mapping.mapping_factory import MappingFactory
 from backend.domain.indices.exceptions import *
-from backend.api.helpers.pesquisa import tratar_motor_pesquisa
+from backend.api.helpers.exceptions.elasticsearch import (
+    tratar_indisponibilidade_elasticsearch,
+)
 
 class ServicoIndices:
     def __init__(self, cliente: AsyncElasticsearch):
         self._cliente = cliente
 
 
-    @tratar_motor_pesquisa
+    @tratar_indisponibilidade_elasticsearch
     async def listar_indices(self) -> List[str]:
         indices = await self._cliente.indices.get_alias(index='*')
 
         return sorted(indices.keys()) 
 
 
-    @tratar_motor_pesquisa
+    @tratar_indisponibilidade_elasticsearch
     async def criar_indice(
         self, 
         params: CreateIndiceRequest
@@ -46,7 +48,7 @@ class ServicoIndices:
         )
 
 
-    @tratar_motor_pesquisa
+    @tratar_indisponibilidade_elasticsearch
     async def deletar_indice(
         self, 
         nome_indice: str

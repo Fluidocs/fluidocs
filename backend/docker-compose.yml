@@ -13,6 +13,7 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+      - temp_data:/tmp/docs
     depends_on:
       elasticsearch:
         condition: service_healthy
