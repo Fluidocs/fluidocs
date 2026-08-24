@@ -1,7 +1,7 @@
 from time import perf_counter
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, status
 
 from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
@@ -9,10 +9,14 @@ from backend.api.schemas.routes.indexacao import (
     IndexacaoLoteResponse,
     IndexacaoResponse,
 )
+from backend.api.schemas.routes.indexacao import (
+    IndexacaoRequest,
+    IndexacaoLoteRequest
+)
 from backend.api.services.indexacao.submissao_indexacao import (
     ServicoSubmissaoIndexacao,
 )
-from backend.domain.indices.mapping.tipo_mapping import TipoMapping
+
 
 indexacao_router = APIRouter(tags=['indexacao'])
 
@@ -23,28 +27,14 @@ indexacao_router = APIRouter(tags=['indexacao'])
     description='Encaminha um arquivo para indexação em background.',
 )
 async def indexar_arquivo(
-    arquivo: Annotated[
-        UploadFile,
-        File(description='Arquivo PDF, JPEG, PNG ou TXT.'),
-    ],
-    nome_indice: Annotated[
-        str,
-        Query(min_length=3, description='Nome do índice de destino.'),
-    ],
-    servico: Annotated[
-        ServicoSubmissaoIndexacao,
-        Depends(obter_servico_submissao_indexacao),
-    ],
-    tipo_mapping: Annotated[
-        TipoMapping,
-        Query(description='Tipo do mapping do índice de destino.'),
-    ] = TipoMapping.DOCUMENTOS,
+    dados: IndexacaoRequest,
+    servico: ServicoSubmissaoIndexacao = Depends(obter_servico_submissao_indexacao),
 ) -> BaseResponse[IndexacaoResponse]:
     inicio = perf_counter()
     id_processamento, nome_arquivo = await servico.enfileirar_arquivo(
-        arquivo,
-        nome_indice,
-        tipo_mapping,
+        dados.arquivo,
+        dados.nome_indice,
+        dados.tipo_mapping,
     )
 
     return BaseResponse(
@@ -52,8 +42,8 @@ async def indexar_arquivo(
         dados=IndexacaoResponse(
             id_processamento=id_processamento,
             nome_arquivo=nome_arquivo,
-            nome_indice=nome_indice,
-            tipo_mapping=tipo_mapping,
+            nome_indice=dados.nome_indice,
+            tipo_mapping=dados.tipo_mapping,
         ),
     )
 
@@ -67,29 +57,18 @@ async def indexar_arquivo(
     ),
 )
 async def indexar_lote_zip(
-    arquivo_zip: Annotated[
-        UploadFile,
-        File(description='Arquivo ZIP contendo documentos suportados.'),
-    ],
-    nome_indice: Annotated[
-        str,
-        Query(min_length=3, description='Nome do índice de destino.'),
-    ],
+    dados: IndexacaoLoteRequest,
     servico: Annotated[
         ServicoSubmissaoIndexacao,
         Depends(obter_servico_submissao_indexacao),
-    ],
-    tipo_mapping: Annotated[
-        TipoMapping,
-        Query(description='Tipo do mapping do índice de destino.'),
-    ] = TipoMapping.DOCUMENTOS,
+    ]
 ) -> BaseResponse[IndexacaoLoteResponse]:
     inicio = perf_counter()
     id_processamento, nome_arquivo, quantidade = (
         await servico.enfileirar_lote_zip(
-            arquivo_zip,
-            nome_indice,
-            tipo_mapping,
+            dados.arquivo_zip,
+            dados.nome_indice,
+            dados.tipo_mapping,
         )
     )
 
@@ -98,8 +77,8 @@ async def indexar_lote_zip(
         dados=IndexacaoLoteResponse(
             id_processamento=id_processamento,
             nome_arquivo=nome_arquivo,
-            nome_indice=nome_indice,
-            tipo_mapping=tipo_mapping,
+            nome_indice=dados.nome_indice,
+            tipo_mapping=dados.tipo_mapping,
             quantidade_arquivos=quantidade,
         ),
     )
