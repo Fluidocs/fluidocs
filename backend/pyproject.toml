@@ -19,6 +19,7 @@ dependencies = [
     "pydantic-settings>=2.15.0",
     "pymupdf4llm>=1.28.2",
     "pytesseract>=0.3.13",
+    "tortoise-orm>=1.1.8",
 ]
 
 [project.scripts]

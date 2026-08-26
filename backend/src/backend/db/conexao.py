@@ -1,10 +1,10 @@
-from config.configuracoes import configuracoes
+from backend.config.configuracoes import config
 
-usuario = configuracoes.usuario_bd
-senha = configuracoes.senha_bd
-host = configuracoes.host_bd
-porta = configuracoes.porta_bd
-nome = configuracoes.nome_bd
+usuario = config.usuario_bd
+senha = config.senha_bd
+host = config.host_bd
+porta = config.porta_bd
+nome = config.nome_bd
 
 URL_BANCO_DADOS = f"postgres://{usuario}:{senha}@{host}:{porta}/{nome}"
 print(f"URL do banco de dados: postgres://{usuario}:***@{host}:{porta}/{nome}")
