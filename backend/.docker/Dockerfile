@@ -10,16 +10,18 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       libpq-dev gcc netcat-openbsd \
-       tesseract-ocr tesseract-ocr-por \
-       libgl1 libglib2.0-0 \
+        tesseract-ocr \
+        tesseract-ocr-por \
+        libgl1 \
+        libglib2.0-0 \
+        netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml uv.lock ./
 
-COPY . . 
+RUN uv sync --frozen --no-dev
 
-RUN uv sync --frozen
+COPY . .
 
 EXPOSE 8000
 
