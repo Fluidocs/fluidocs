@@ -15,6 +15,8 @@ services:
       - /app/.venv
       - temp_data:/tmp/docs
     depends_on:
+      postgresql:
+        condition: service_healthy
       elasticsearch:
         condition: service_healthy
       redis:
@@ -96,11 +98,32 @@ services:
       timeout: 3s
       retries: 10
 
+  postgresql:
+    image: postgres:17
+    container_name: fluidocs-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${NOME_BD}
+      - POSTGRES_USER=${USUARIO_BD}
+      - POSTGRES_PASSWORD=${SENHA_BD}
+    ports: 
+      - "${PORTA_BD}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fluidocs_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USUARIO_BD} -d ${NOME_BD}"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+
 volumes:
   elastic_data:
   ollama_data:
   redis_data:
   temp_data:
+  postgres_data:
 
 networks:
   fluidocs_network:

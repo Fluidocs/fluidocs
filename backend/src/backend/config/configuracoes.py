@@ -13,7 +13,12 @@ class Configuracoes(BaseSettings):
     tamanho_lote_indexacao: int = 32
     celery_worker_concurrency: int = 1
 
-    # [TODO] Adicionar configurações de conexão com o banco local do middleware
+    #** POSTGRESQL **
+    nome_db: str = ''
+    usuario_db: str = ''
+    senha_db: str = ''
+    porta_db: int = 5432
+    host_db: str = ''
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'
