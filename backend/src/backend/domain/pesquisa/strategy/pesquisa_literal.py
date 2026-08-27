@@ -3,6 +3,8 @@ from ..formatacao.tipos import ResultadoPesquisa
 
 
 class PesquisaLiteral(BasePesquisaStrategy):
+    _SATURACAO_BM25 = 8.0
+
     async def pesquisar(
         self,
         pesquisa: str,
@@ -16,19 +18,28 @@ class PesquisaLiteral(BasePesquisaStrategy):
             from_=offset,
             size=tamanho,
             query={
-                'bool': {
-                    'must': [
-                        {
-                            'match': {
-                                'conteudo': {
-                                    'query': pesquisa,
-                                    'fuzziness': 'AUTO',
-                                    'prefix_length': 1,
-                                    'boost': 1.0
-                                }
+                'function_score': {
+                    'query': {
+                        'match': {
+                            'conteudo': {
+                                'query': pesquisa,
+                                'fuzziness': 'AUTO',
+                                'prefix_length': 1
                             }
                         }
-                    ]
+                    },
+                    'script_score': {
+                        'script': {
+                            'source': '''
+                                double score = _score;
+                                return score / (score + params.saturacao);
+                            ''',
+                            'params': {
+                                'saturacao': self._SATURACAO_BM25
+                            }
+                        }
+                    },
+                    'boost_mode': 'replace'
                 }
             },
             collapse=self._collapse(),

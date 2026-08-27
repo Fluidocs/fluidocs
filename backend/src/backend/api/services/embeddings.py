@@ -4,9 +4,24 @@ from ollama import AsyncClient, Client
 
 
 class ServicoEmbeddings:
+    _INSTRUCTION = (
+        'Given a user search query in Portuguese,'
+        'retrieve passages from documents that best answer it.'
+    )
+
+
     def __init__(self, client: AsyncClient | Client, model: str):
         self._client = client
         self._model = model
+
+
+    @classmethod
+    def _formatar_consulta(cls, texto: str) -> str:
+        return (
+            f'Instruct: {cls._INSTRUCTION}\n'
+            f'Query: {texto}'
+        )
+
 
     @overload
     async def async_embed(self, data: str) -> list[float]: ...
@@ -21,7 +36,7 @@ class ServicoEmbeddings:
         client = cast(AsyncClient, self._client)
         response = await client.embed(
             model=self._model,
-            input=data,
+            input=self._formatar_consulta(data),
         )
 
         embeddings = [list(embedding) for embedding in response.embeddings]
