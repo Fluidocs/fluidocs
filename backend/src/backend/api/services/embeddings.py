@@ -6,7 +6,7 @@ from ollama import AsyncClient, Client
 class ServicoEmbeddings:
     _INSTRUCTION = (
         'Given a user search query in Portuguese,'
-        ' retrieve passages from documents that best answer it.'
+        'retrieve passages from documents that best answer it.'
     )
 
 

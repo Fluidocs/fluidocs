@@ -52,7 +52,6 @@ class ServicoPesquisa:
         configuracao_hibrida = ConfiguracaoPesquisaHibrida(
             boost_literal=dados.configuracao_hibrida.boost_literal,
             boost_vetorial=dados.configuracao_hibrida.boost_vetorial,
-            numero_candidatos=dados.configuracao_hibrida.numero_candidatos
         )
         
         strategy = self._factory.obter_metodo(
