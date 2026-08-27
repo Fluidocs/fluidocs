@@ -1,9 +1,30 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: .docker/Dockerfile
+      target: dev
+    container_name: fluidocs_frontend_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - VITE_API_URL=/api
+      - VITE_API_PROXY_TARGET=http://host.docker.internal:8000
+      - HOST=0.0.0.0
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - VITE_HMR_HOST=localhost
+      - VITE_HMR_CLIENT_PORT=3000
   api:
     container_name: fluidocs-api
     image: fluidocs-api:dev
     build: 
-      context: .
+      context: ./backend
       dockerfile: .docker/Dockerfile
     env_file:
       - .env
@@ -11,7 +32,7 @@ services:
     ports:
       - "${SERVER_PORT}:8000"
     volumes:
-      - .:/app
+      - ./backend:/app
       - /app/.venv
       - temp_data:/tmp/docs
     depends_on:
@@ -69,7 +90,7 @@ services:
       - .env
     restart: unless-stopped
     volumes:
-      - .:/app
+      - ./backend:/app
       - /app/.venv
       - temp_data:/tmp/docs
     depends_on:
