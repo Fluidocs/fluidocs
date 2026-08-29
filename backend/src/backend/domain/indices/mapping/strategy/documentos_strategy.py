@@ -1,6 +1,6 @@
 from typing import Any
 
-from backend.config import config
+from backend.config.configuracoes import config
 from .base_strategy import MappingBase
 
 class DocumentosStrategy(MappingBase):

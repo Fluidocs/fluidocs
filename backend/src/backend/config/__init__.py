@@ -1,13 +1,18 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from elasticsearch import AsyncElasticsearch
-from ollama import AsyncClient
 
-from .configuracoes import config
+from elasticsearch import AsyncElasticsearch
+from fastapi import FastAPI
+from ollama import AsyncClient
+from tortoise import Tortoise
+
+from backend.api.handlers import registrar_exception_handlers
+from backend.api.routes.router import build_router
 from backend.api.schemas.routes.base_response import BaseResponse
 from backend.api.schemas.routes.health_response import HealthResponse
-from backend.api.routes.router import build_router
-from backend.api.handlers import registrar_exception_handlers
+from backend.db.conexao import TORTOISE_CONFIG
+
+from .configuracoes import config
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,22 +22,29 @@ async def lifespan(app: FastAPI):
     ai_models_client = AsyncClient(config.ollama_host)
     app.state.ollama = ai_models_client
 
-    # [TODO] Adicionar aerich (conexão com o banco)
+    # Inicializa a conexao com o banco para os models do Tortoise.
+    await Tortoise.init(
+        config=TORTOISE_CONFIG,
+        _enable_global_fallback=True,
+    )
+    await Tortoise.generate_schemas(safe=True)
 
     yield
 
+    await Tortoise.close_connections()
     await main_es_client.close()
     await ai_models_client.close()
+
 
 def inicializar_app() -> FastAPI:
     app = FastAPI(
         debug=config.debug,
         title="Fluidocs API",
         description=(
-            "Middleware inteligente, focado em busca lexical, semântica ou híbrida sobre os seus dados."
+            "Middleware inteligente, focado em busca lexical, semantica ou hibrida sobre os seus dados."
         ),
         version='1.0',
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     registrar_exception_handlers(app)
@@ -40,12 +52,12 @@ def inicializar_app() -> FastAPI:
     @app.get("/health", response_model=BaseResponse[HealthResponse])
     async def health():
         return {
-            'dados': { 'status_code': 200 }
+            'dados': {'status_code': 200}
         }
 
     app.include_router(
         build_router(),
-        prefix='/api'
+        prefix='/api',
     )
 
     return app
