@@ -1,17 +1,18 @@
-from fastapi import APIRouter, Depends, status
 from time import perf_counter
 
-from backend.api.helpers.auth import (
+from fastapi import APIRouter, Depends, status
+
+from backend.api.dependencies.auth import (
     obter_servico_auth,
     obter_usuario_autenticado,
 )
 from backend.api.models.usuario import Usuario
-from backend.api.schemas.routes.auth import (
+from backend.api.schemas.auth_schemas import (
     SignInRequest,
     TokenResponse,
 )
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
-from backend.api.schemas.routes.usuario import UsuarioResponse
+from backend.api.schemas.backoffice.usuario_schemas import UsuarioResponse
 from backend.api.services.auth import ServicoAuth
 
 
@@ -29,14 +30,14 @@ async def sign_in(
     servico: ServicoAuth = Depends(obter_servico_auth),
 ) -> BaseResponse[TokenResponse]:
     inicio = perf_counter()
-    usuario = await servico.autenticar(
+    token = await servico.autenticar(
         email=dados.email,
         senha=dados.senha,
     )
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=_montar_token_response(servico, usuario),
+        dados=token,
     )
 
 
@@ -52,26 +53,12 @@ async def obter_usuario_atual(
     inicio = perf_counter()
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=_montar_usuario_response(usuario),
-    )
-
-
-def _montar_token_response(
-    servico: ServicoAuth,
-    usuario: Usuario,
-) -> TokenResponse:
-    return TokenResponse(
-        access_token=servico.gerar_token_acesso(usuario),
-        usuario=_montar_usuario_response(usuario),
-    )
-
-
-def _montar_usuario_response(usuario: Usuario) -> UsuarioResponse:
-    return UsuarioResponse(
-        id=usuario.id,
-        nome=usuario.nome,
-        email=usuario.email,
-        foto_perfil=usuario.foto_perfil,
-        data_criacao=usuario.data_criacao,
-        data_atualizacao=usuario.data_atualizacao,
+        dados=UsuarioResponse(
+            id=usuario.id,
+            nome=usuario.nome,
+            email=usuario.email,
+            foto_perfil=usuario.foto_perfil,
+            data_criacao=usuario.data_criacao,
+            data_atualizacao=usuario.data_atualizacao,
+        ),
     )

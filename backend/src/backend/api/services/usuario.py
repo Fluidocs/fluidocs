@@ -1,25 +1,33 @@
 from fastapi import HTTPException, status
 
+from backend.api.helpers.auth import normalizar_email
 from backend.api.models.usuario import Usuario
-from backend.api.schemas.routes.usuario import (
+from backend.api.schemas.backoffice.usuario_schemas import (
     AtualizarUsuarioRequest,
     CriarUsuarioRequest,
 )
-from backend.core.seguranca import gerar_hash_senha
+from backend.api.core.auth.gerador_hash import GeradorHash
 
 
 class ServicoUsuario:
+    def __init__(
+        self,
+        *,
+        gerador_hash: GeradorHash,
+    ) -> None:
+        self.gerador_hash = gerador_hash
+
     async def criar(
         self,
         dados: CriarUsuarioRequest,
     ) -> Usuario:
-        email = self._normalizar_email(dados.email)
+        email = normalizar_email(dados.email)
         await self._validar_email_disponivel(email)
 
         return await Usuario.create(
             nome=dados.nome,
             email=email,
-            senha=gerar_hash_senha(dados.senha),
+            senha=self.gerador_hash.gerar_hash_senha(dados.senha),
             foto_perfil=dados.foto_perfil,
         )
 
@@ -42,7 +50,7 @@ class ServicoUsuario:
         dados_atualizacao = dados.model_dump(exclude_unset=True)
 
         if 'email' in dados_atualizacao and dados.email:
-            email = self._normalizar_email(dados.email)
+            email = normalizar_email(dados.email)
             await self._validar_email_disponivel(email, usuario_id=usuario.id)
             usuario.email = email
 
@@ -50,7 +58,7 @@ class ServicoUsuario:
             usuario.nome = dados.nome
 
         if 'senha' in dados_atualizacao and dados.senha is not None:
-            usuario.senha = gerar_hash_senha(dados.senha)
+            usuario.senha = self.gerador_hash.gerar_hash_senha(dados.senha)
 
         if 'foto_perfil' in dados_atualizacao:
             usuario.foto_perfil = dados.foto_perfil
@@ -76,10 +84,6 @@ class ServicoUsuario:
                 status_code=status.HTTP_409_CONFLICT,
                 detail='Ja existe um usuario cadastrado com este e-mail.',
             )
-
-    @staticmethod
-    def _normalizar_email(email: str) -> str:
-        return email.strip().lower()
 
     @staticmethod
     def _usuario_nao_encontrado() -> HTTPException:

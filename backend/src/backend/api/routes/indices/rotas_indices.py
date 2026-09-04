@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from elasticsearch import BadRequestError
 from typing import Annotated
 
-from backend.api.helpers.auth import obter_usuario_autenticado
+from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.helpers.indices import obter_servico_indices
 from backend.api.models.usuario import Usuario
 from backend.api.services.indices import ServicoIndices

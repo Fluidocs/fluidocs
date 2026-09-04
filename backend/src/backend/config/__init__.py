@@ -22,7 +22,6 @@ async def lifespan(app: FastAPI):
     ai_models_client = AsyncClient(config.ollama_host)
     app.state.ollama = ai_models_client
 
-    # Inicializa a conexao com o banco para os models do Tortoise.
     await Tortoise.init(
         config=TORTOISE_CONFIG,
         _enable_global_fallback=True,

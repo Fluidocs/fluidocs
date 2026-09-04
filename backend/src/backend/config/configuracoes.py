@@ -22,8 +22,8 @@ class Configuracoes(BaseSettings):
 
     # ** AUTENTICACAO **
     jwt_secret: str
-    jwt_issuer: str = 'fluidocs-api'
-    jwt_access_token_expire_minutes: int = 60
+    jwt_algorithm: str = 'HS256'
+    jwt_access_token_expire_minutes: int = 20
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'

@@ -4,7 +4,7 @@ from time import perf_counter
 from backend.api.schemas.routes.pesquisa.pesquisa_request import PesquisaRequest
 from backend.api.schemas.routes.pesquisa.pesquisa_response import DocumentoPesquisaResponse
 from backend.api.schemas.routes.base_response import BaseResponse
-from backend.api.helpers.auth import obter_usuario_autenticado
+from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.helpers.pesquisa import obter_servico_pesquisa
 from backend.api.models.usuario import Usuario
 from backend.api.services.pesquisa import ServicoPesquisa

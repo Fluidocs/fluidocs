@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 
-from .auth.auth_routes import auth_router
+from .auth_routes import auth_router
 from .indices.rotas_indices import indices_router
 from .indexacao.rotas_indexacao import indexacao_router
 from .pesquisa.pesquisa_routes import pesquisa_router
-from .usuario.usuario_routes import usuario_router
+from .backoffice.usuario_routes import usuario_router
 
 def build_router() -> APIRouter:
     router = APIRouter()

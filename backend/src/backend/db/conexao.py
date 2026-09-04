@@ -15,7 +15,7 @@ TORTOISE_CONFIG = {
     "apps": {
         "models": {
             "models": [
-                "backend.api.models.usuario",
+                "backend.api.models",
                 "aerich.models"
             ],
             "default_connection": "default"

@@ -3,14 +3,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, status
 
-from backend.api.helpers.usuario import obter_servico_usuario
+from backend.api.dependencies.user import obter_servico_usuario
 from backend.api.models.usuario import Usuario
-from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
-from backend.api.schemas.routes.usuario import (
+from backend.api.schemas.backoffice.usuario_schemas import (
     AtualizarUsuarioRequest,
     CriarUsuarioRequest,
     UsuarioResponse,
 )
+from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
 from backend.api.services.usuario import ServicoUsuario
 
 
@@ -104,4 +104,3 @@ def montar_usuario_response(usuario: Usuario) -> UsuarioResponse:
         data_criacao=usuario.data_criacao,
         data_atualizacao=usuario.data_atualizacao,
     )
-
