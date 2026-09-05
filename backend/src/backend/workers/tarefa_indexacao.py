@@ -36,7 +36,7 @@ def _indexar_documento(
         ):
             provedor_embeddings = ProvedorEmbeddingsIndexacao(
                 cliente=cliente_ollama,
-                modelo=config.ollama_embeddings_host
+                modelo=config.embeddings_model
             )
 
             servico = ServicoIndexacao(
