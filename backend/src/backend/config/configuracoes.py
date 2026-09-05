@@ -10,7 +10,7 @@ class Configuracoes(BaseSettings):
     tamanho_bloco_upload: int = 1024
     tamanho_trecho: int = 1000
     sobreposicao_trecho: int = 100
-    tamanho_lote_indexacao: int = 32
+    tamanho_lote_indexacao: int = 8
     celery_worker_concurrency: int = 1
 
     #** POSTGRESQL **
@@ -29,7 +29,9 @@ class Configuracoes(BaseSettings):
     elastic_url: str = 'http://elasticsearch:9200'
 
     # ** OLLAMA **
-    ollama_host: str = 'http://ollama:11434'
+    ollama_chat_host: str = 'http://ollama:11434'
+    embeddings_pesquisa_host: str = 'http://ollama:11434'
+    embeddings_indexacao_host: str = 'http://ollama:11434'
     embeddings_model: str = 'qwen3-embedding:0.6b'
     embeddings_dims: int = 1024
 

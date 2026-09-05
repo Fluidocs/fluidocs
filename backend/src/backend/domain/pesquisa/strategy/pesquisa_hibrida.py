@@ -43,7 +43,7 @@ class PesquisaHibrida(BasePesquisaStrategy):
             params['query'] = ( self._construir_busca_literal(pesquisa) )
 
         if self._config.boost_vetorial > 0:
-            vetor_pesquisa = await self._embeddings.async_embed(pesquisa)
+            vetor_pesquisa = await self._embeddings.gerar_consulta(pesquisa)
 
             params['knn'] = self._construir_busca_vetorial(vetor_pesquisa, offset, tamanho)
 

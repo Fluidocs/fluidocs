@@ -2,8 +2,8 @@ from typing import Protocol
 
 
 class ProvedorEmbeddings(Protocol):
-    async def async_embed(
+    async def gerar_consulta(
         self, 
-        data: str | list[str]
+        data: str
     ) -> list[float]:
         ...

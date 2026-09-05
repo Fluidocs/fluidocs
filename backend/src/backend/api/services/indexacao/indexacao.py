@@ -5,21 +5,21 @@ from typing import Any
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
-from backend.api.services.embeddings import ServicoEmbeddings
-from backend.config.configuracoes import config
+from backend.api.services.embeddings.indexacao import ProvedorEmbeddingsIndexacao
 from backend.domain.extracao.divisor_texto import DivisorTexto
 from backend.domain.extracao.extracao_factory import FactoryExtracao
 from backend.domain.extracao.tipos import FormatoArquivo
 from backend.domain.indices.indexacao import IndexacaoFactory
 from backend.domain.indices.indexacao.strategy import IndexacaoBase
 from backend.domain.indices.mapping.tipo_mapping import TipoMapping
+from backend.config.configuracoes import config
 
 
 class ServicoIndexacao:
     def __init__(
         self,
         cliente: Elasticsearch,
-        embeddings: ServicoEmbeddings,
+        embeddings: ProvedorEmbeddingsIndexacao,
         nome_indice: str,
     ):
         self._cliente = cliente
@@ -93,7 +93,7 @@ class ServicoIndexacao:
         nome_arquivo: str,
         formato: FormatoArquivo,
     ) -> None:
-        embeddings = self._embeddings.embed(trechos)
+        embeddings = self._embeddings.gerar_embeddings(trechos)
         acoes = strategy.construir_acoes(
             nome_indice=self._nome_indice,
             nome_arquivo=nome_arquivo,

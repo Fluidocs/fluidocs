@@ -1,7 +1,7 @@
 from time import perf_counter
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Form, Depends, status
 
 from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
@@ -29,7 +29,10 @@ indexacao_router = APIRouter(tags=['indexacao'])
     description='Encaminha um arquivo para indexação em background.',
 )
 async def indexar_arquivo(
-    dados: IndexacaoRequest,
+    dados: Annotated[
+        IndexacaoRequest,
+        Form(media_type='multipart/form-data')
+    ],
     usuario: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoSubmissaoIndexacao = Depends(obter_servico_submissao_indexacao),
 ) -> BaseResponse[IndexacaoResponse]:
@@ -60,7 +63,10 @@ async def indexar_arquivo(
     ),
 )
 async def indexar_lote_zip(
-    dados: IndexacaoLoteRequest,
+    dados: Annotated[
+        IndexacaoLoteRequest,
+        Form(media_type='multipart/form-data')
+    ],
     servico: Annotated[
         ServicoSubmissaoIndexacao,
         Depends(obter_servico_submissao_indexacao),
