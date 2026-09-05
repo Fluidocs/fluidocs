@@ -28,25 +28,13 @@ class ServicoUsuario:
             nome=dados.nome,
             email=email,
             senha=self.gerador_hash.gerar_hash_senha(dados.senha),
-            foto_perfil=dados.foto_perfil,
         )
-
-    async def obter(
-        self,
-        usuario_id: int,
-    ) -> Usuario:
-        usuario = await Usuario.get_or_none(id=usuario_id)
-        if not usuario:
-            raise self._usuario_nao_encontrado()
-
-        return usuario
 
     async def atualizar(
         self,
-        usuario_id: int,
+        usuario: Usuario,
         dados: AtualizarUsuarioRequest,
     ) -> Usuario:
-        usuario = await self.obter(usuario_id)
         dados_atualizacao = dados.model_dump(exclude_unset=True)
 
         if 'email' in dados_atualizacao and dados.email:
@@ -68,10 +56,10 @@ class ServicoUsuario:
 
     async def deletar(
         self,
-        usuario_id: int,
-    ) -> None:
-        usuario = await self.obter(usuario_id)
+        usuario: Usuario,
+    ) -> Usuario:
         await usuario.delete()
+        return usuario
 
     async def _validar_email_disponivel(
         self,

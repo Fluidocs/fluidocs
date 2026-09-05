@@ -1,14 +1,10 @@
 from time import perf_counter
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, status
 
 from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.dependencies.user import obter_servico_usuario
-from backend.api.helpers.user import (
-    montar_usuario_response,
-    validar_acesso_ao_proprio_usuario,
-)
+from backend.api.helpers.user import montar_usuario_response
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.backoffice.usuario_schemas import (
     AtualizarUsuarioRequest,
@@ -36,42 +32,20 @@ async def obter_usuario_atual(
         dados=montar_usuario_response(usuario_autenticado),
     )
 
-@usuario_router.get(
-    '/{usuario_id}',
-    status_code=status.HTTP_200_OK,
-    response_model=BaseResponse[UsuarioResponse],
-    description='Retorna um usuario pelo identificador.',
-)
-async def obter_usuario(
-    usuario_id: Annotated[int, Path(gt=0)],
-    usuario_autenticado: Usuario = Depends(obter_usuario_autenticado),
-    servico: ServicoUsuario = Depends(obter_servico_usuario),
-) -> BaseResponse[UsuarioResponse]:
-    inicio = perf_counter()
-    validar_acesso_ao_proprio_usuario(usuario_id, usuario_autenticado)
-    usuario = await servico.obter(usuario_id)
-
-    return BaseResponse(
-        meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=montar_usuario_response(usuario),
-    )
-
 
 @usuario_router.patch(
-    '/{usuario_id}',
+    '/me',
     status_code=status.HTTP_200_OK,
     response_model=BaseResponse[UsuarioResponse],
-    description='Atualiza um usuario pelo identificador.',
+    description='Atualiza os dados do usuario autenticado.',
 )
 async def atualizar_usuario(
-    usuario_id: Annotated[int, Path(gt=0)],
     dados: AtualizarUsuarioRequest,
     usuario_autenticado: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoUsuario = Depends(obter_servico_usuario),
 ) -> BaseResponse[UsuarioResponse]:
     inicio = perf_counter()
-    validar_acesso_ao_proprio_usuario(usuario_id, usuario_autenticado)
-    usuario = await servico.atualizar(usuario_id, dados)
+    usuario = await servico.atualizar(usuario_autenticado, dados)
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
@@ -80,20 +54,17 @@ async def atualizar_usuario(
 
 
 @usuario_router.delete(
-    '/{usuario_id}',
+    '/me',
     status_code=status.HTTP_200_OK,
     response_model=BaseResponse[UsuarioResponse],
-    description='Remove um usuario pelo identificador.',
+    description='Remove a conta do usuario autenticado.',
 )
 async def deletar_usuario(
-    usuario_id: Annotated[int, Path(gt=0)],
     usuario_autenticado: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoUsuario = Depends(obter_servico_usuario),
 ) -> BaseResponse[UsuarioResponse]:
     inicio = perf_counter()
-    validar_acesso_ao_proprio_usuario(usuario_id, usuario_autenticado)
-    usuario = await servico.obter(usuario_id)
-    await servico.deletar(usuario_id)
+    usuario = await servico.deletar(usuario_autenticado)
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),

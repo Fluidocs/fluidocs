@@ -15,7 +15,7 @@ def build_router() -> APIRouter:
     )
     router.include_router(
         usuario_router,
-        prefix='/usuario'
+        prefix=''
     )
     router.include_router(
         indices_router,

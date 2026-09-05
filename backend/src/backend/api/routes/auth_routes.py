@@ -1,12 +1,12 @@
 from time import perf_counter
 
 from fastapi import APIRouter, Depends, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from backend.api.dependencies.auth import obter_servico_auth
 from backend.api.dependencies.user import obter_servico_usuario
 from backend.api.schemas.auth_schemas import (
     CadastroUsuarioResponse,
-    SignInRequest,
     TokenResponse,
 )
 from backend.api.schemas.backoffice.usuario_schemas import (
@@ -43,22 +43,16 @@ async def cadastrar_usuario(
 
 
 @auth_router.post(
-    '/signin',
+    '/login',
     status_code=status.HTTP_200_OK,
-    response_model=BaseResponse[TokenResponse],
+    response_model=TokenResponse,
     description='Autentica um usuario e retorna um token de acesso JWT.',
 )
-async def sign_in(
-    dados: SignInRequest,
+async def login(
+    dados: OAuth2PasswordRequestForm = Depends(),
     servico: ServicoAuth = Depends(obter_servico_auth),
-) -> BaseResponse[TokenResponse]:
-    inicio = perf_counter()
-    token = await servico.autenticar(
-        email=dados.email,
-        senha=dados.senha,
-    )
-
-    return BaseResponse(
-        meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=token,
+) -> TokenResponse:
+    return await servico.autenticar(
+        email=dados.username,
+        senha=dados.password,
     )
