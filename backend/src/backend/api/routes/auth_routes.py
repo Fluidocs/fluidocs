@@ -43,12 +43,12 @@ async def cadastrar_usuario(
 
 
 @auth_router.post(
-    '/signin',
+    '/login',
     status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
     description='Autentica um usuario e retorna um token de acesso JWT.',
 )
-async def sign_in(
+async def login(
     dados: OAuth2PasswordRequestForm = Depends(),
     servico: ServicoAuth = Depends(obter_servico_auth),
 ) -> TokenResponse:

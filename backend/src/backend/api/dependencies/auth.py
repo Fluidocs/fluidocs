@@ -9,7 +9,7 @@ from backend.api.core.auth.gerador_tokens import TokenProvider
 from backend.config.configuracoes import config
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl='/api/auth/signin',
+    tokenUrl='/api/auth/login',
     auto_error=False,
 )
 
