@@ -15,13 +15,7 @@ TORTOISE_CONFIG = {
     "apps": {
         "models": {
             "models": [
-                "api.models.chat_llm",
-                "api.models.credencial_integracao",
-                "api.models.grupo_acesso",
-                "api.models.integracao",
-                "api.models.organizacao",
-                "api.models.repositorio",
-                "api.models.usuario",
+                "backend.api.models",
                 "aerich.models"
             ],
             "default_connection": "default"

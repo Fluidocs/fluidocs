@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from elasticsearch import BadRequestError
 from typing import Annotated
 
+from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.helpers.indices import obter_servico_indices
+from backend.api.models.usuario import Usuario
 from backend.api.services.indices import ServicoIndices
 from backend.api.schemas.routes.base_response import BaseResponse
 from backend.api.schemas.routes.indices.indices_request import CreateIndiceRequest
@@ -17,6 +19,7 @@ indices_router = APIRouter(tags=['indices'])
     description='Listar todos os índices existentes no Elasticsearch'
 )
 async def listar_indices(
+    usuario: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoIndices = Depends(obter_servico_indices)
 ) -> BaseResponse:
     response = await servico.listar_indices()
@@ -34,6 +37,7 @@ async def listar_indices(
 )
 async def criar_indice(
     data: CreateIndiceRequest,
+    usuario: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoIndices = Depends(obter_servico_indices)
 ) -> BaseResponse[CreateIndiceResponse]:
     await servico.criar_indice(data)
@@ -55,6 +59,7 @@ async def criar_indice(
 )
 async def deletar_indice(
     nome_indice: Annotated[str, Path(min_length=3)],
+    usuario: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoIndices = Depends(obter_servico_indices)
 ) -> BaseResponse[DestroyIndiceResponse]:
     await servico.deletar_indice(nome_indice)

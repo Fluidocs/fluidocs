@@ -3,7 +3,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
+from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
+from backend.api.models.usuario import Usuario
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
 from backend.api.schemas.routes.indexacao import (
     IndexacaoLoteResponse,
@@ -28,6 +30,7 @@ indexacao_router = APIRouter(tags=['indexacao'])
 )
 async def indexar_arquivo(
     dados: IndexacaoRequest,
+    usuario: Usuario = Depends(obter_usuario_autenticado),
     servico: ServicoSubmissaoIndexacao = Depends(obter_servico_submissao_indexacao),
 ) -> BaseResponse[IndexacaoResponse]:
     inicio = perf_counter()
@@ -61,7 +64,8 @@ async def indexar_lote_zip(
     servico: Annotated[
         ServicoSubmissaoIndexacao,
         Depends(obter_servico_submissao_indexacao),
-    ]
+    ],
+    usuario: Usuario = Depends(obter_usuario_autenticado),
 ) -> BaseResponse[IndexacaoLoteResponse]:
     inicio = perf_counter()
     id_processamento, nome_arquivo, quantidade = (

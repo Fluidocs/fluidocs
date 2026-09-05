@@ -14,11 +14,16 @@ class Configuracoes(BaseSettings):
     celery_worker_concurrency: int = 1
 
     #** POSTGRESQL **
-    nome_db: str = ''
-    usuario_db: str = ''
-    senha_db: str = ''
-    porta_db: int = 5432
-    host_db: str = ''
+    nome_bd: str = ''
+    usuario_bd: str = ''
+    senha_bd: str = ''
+    porta_bd: int = 5432
+    host_bd: str = ''
+
+    # ** AUTENTICACAO **
+    secret_key: str
+    jwt_algorithm: str = 'HS256'
+    jwt_access_token_expire_minutes: int = 20
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'
