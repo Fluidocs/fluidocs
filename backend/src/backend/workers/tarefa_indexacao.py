@@ -32,7 +32,7 @@ def _indexar_documento(
     try:
         with (
             Elasticsearch(config.elastic_url) as cliente_es,
-            Client(host=config.ollama_embeddings_host) as cliente_ollama
+            Client(host=config.embeddings_indexacao_host) as cliente_ollama
         ):
             provedor_embeddings = ProvedorEmbeddingsIndexacao(
                 cliente=cliente_ollama,

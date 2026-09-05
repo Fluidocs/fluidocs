@@ -19,10 +19,10 @@ async def lifespan(app: FastAPI):
     main_es_client = AsyncElasticsearch(config.elastic_url)
     app.state.elasticsearch = main_es_client
 
-    ai_models_client = AsyncClient(config.ollama_host)
+    ai_models_client = AsyncClient(config.ollama_chat_host)
     app.state.ollama = ai_models_client
 
-    embeddings_client = AsyncClient(config.ollama_embeddings_host)
+    embeddings_client = AsyncClient(config.embeddings_pesquisa_host)
     app.state.embeddings = embeddings_client
 
     await Tortoise.init(
