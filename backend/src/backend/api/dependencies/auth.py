@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 
 from backend.api.models.usuario import Usuario
@@ -8,9 +8,10 @@ from backend.api.core.auth.gerador_hash import GeradorHash
 from backend.api.core.auth.gerador_tokens import TokenProvider
 from backend.config.configuracoes import config
 
-
-bearer_scheme = HTTPBearer(auto_error=False)
-
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl='/api/auth/signin',
+    auto_error=False,
+)
 
 def obter_gerador_hash() -> GeradorHash:
     return GeradorHash()
@@ -18,7 +19,7 @@ def obter_gerador_hash() -> GeradorHash:
 
 def obter_gerador_token() -> TokenProvider:
     return TokenProvider(
-        secret=config.jwt_secret,
+        secret=config.secret_key,
         algorithm=config.jwt_algorithm,
         tempo_expiracao_minutos=config.jwt_access_token_expire_minutes,
     )
@@ -35,10 +36,10 @@ def obter_servico_auth(
 
 
 async def obter_usuario_autenticado(
-    credenciais: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    token: str | None = Depends(oauth2_scheme),
     gerador_token: TokenProvider = Depends(obter_gerador_token),
 ) -> Usuario:
-    if not credenciais:
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Credenciais de autenticacao nao informadas.',
@@ -46,7 +47,7 @@ async def obter_usuario_autenticado(
         )
 
     try:
-        payload = gerador_token.decodificar_token(credenciais.credentials)
+        payload = gerador_token.decodificar_token(token)
         if payload.get('type') != 'access':
             raise _token_invalido()
 

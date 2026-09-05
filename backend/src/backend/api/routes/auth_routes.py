@@ -2,21 +2,44 @@ from time import perf_counter
 
 from fastapi import APIRouter, Depends, status
 
-from backend.api.dependencies.auth import (
-    obter_servico_auth,
-    obter_usuario_autenticado,
-)
-from backend.api.models.usuario import Usuario
+from backend.api.dependencies.auth import obter_servico_auth
+from backend.api.dependencies.user import obter_servico_usuario
 from backend.api.schemas.auth_schemas import (
+    CadastroUsuarioResponse,
     SignInRequest,
     TokenResponse,
 )
+from backend.api.schemas.backoffice.usuario_schemas import (
+    CriarUsuarioRequest,
+)
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
-from backend.api.schemas.backoffice.usuario_schemas import UsuarioResponse
 from backend.api.services.auth import ServicoAuth
+from backend.api.services.usuario import ServicoUsuario
 
 
 auth_router = APIRouter(tags=['auth'])
+
+
+@auth_router.post(
+    '/cadastrar',
+    status_code=status.HTTP_201_CREATED,
+    response_model=BaseResponse[CadastroUsuarioResponse],
+    description='Cadastra um usuario.',
+)
+async def cadastrar_usuario(
+    dados: CriarUsuarioRequest,
+    servico: ServicoUsuario = Depends(obter_servico_usuario),
+) -> BaseResponse[CadastroUsuarioResponse]:
+    inicio = perf_counter()
+    usuario = await servico.criar(dados)
+
+    return BaseResponse(
+        meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
+        dados=CadastroUsuarioResponse(
+            nome=usuario.nome,
+            email=usuario.email,
+        ),
+    )
 
 
 @auth_router.post(
@@ -38,27 +61,4 @@ async def sign_in(
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
         dados=token,
-    )
-
-
-@auth_router.get(
-    '/me',
-    status_code=status.HTTP_200_OK,
-    response_model=BaseResponse[UsuarioResponse],
-    description='Retorna o usuario autenticado a partir do token JWT.',
-)
-async def obter_usuario_atual(
-    usuario: Usuario = Depends(obter_usuario_autenticado),
-) -> BaseResponse[UsuarioResponse]:
-    inicio = perf_counter()
-    return BaseResponse(
-        meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=UsuarioResponse(
-            id=usuario.id,
-            nome=usuario.nome,
-            email=usuario.email,
-            foto_perfil=usuario.foto_perfil,
-            data_criacao=usuario.data_criacao,
-            data_atualizacao=usuario.data_atualizacao,
-        ),
     )

@@ -21,7 +21,7 @@ class Configuracoes(BaseSettings):
     host_bd: str = ''
 
     # ** AUTENTICACAO **
-    jwt_secret: str
+    secret_key: str
     jwt_algorithm: str = 'HS256'
     jwt_access_token_expire_minutes: int = 20
 
