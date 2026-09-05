@@ -5,10 +5,7 @@ from fastapi import APIRouter, Depends, Path, status
 
 from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.dependencies.user import obter_servico_usuario
-from backend.api.helpers.user import (
-    montar_usuario_response,
-    validar_acesso_ao_proprio_usuario,
-)
+from backend.api.helpers.user import montar_usuario_response
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.backoffice.usuario_schemas import (
     AtualizarUsuarioRequest,
@@ -48,8 +45,7 @@ async def obter_usuario(
     servico: ServicoUsuario = Depends(obter_servico_usuario),
 ) -> BaseResponse[UsuarioResponse]:
     inicio = perf_counter()
-    validar_acesso_ao_proprio_usuario(usuario_id, usuario_autenticado)
-    usuario = await servico.obter(usuario_id)
+    usuario = await servico.obter(usuario_id, usuario_autenticado)
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
@@ -70,8 +66,7 @@ async def atualizar_usuario(
     servico: ServicoUsuario = Depends(obter_servico_usuario),
 ) -> BaseResponse[UsuarioResponse]:
     inicio = perf_counter()
-    validar_acesso_ao_proprio_usuario(usuario_id, usuario_autenticado)
-    usuario = await servico.atualizar(usuario_id, dados)
+    usuario = await servico.atualizar(usuario_id, dados, usuario_autenticado)
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
@@ -91,9 +86,7 @@ async def deletar_usuario(
     servico: ServicoUsuario = Depends(obter_servico_usuario),
 ) -> BaseResponse[UsuarioResponse]:
     inicio = perf_counter()
-    validar_acesso_ao_proprio_usuario(usuario_id, usuario_autenticado)
-    usuario = await servico.obter(usuario_id)
-    await servico.deletar(usuario_id)
+    usuario = await servico.deletar(usuario_id, usuario_autenticado)
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),

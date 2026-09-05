@@ -28,13 +28,19 @@ class ServicoUsuario:
             nome=dados.nome,
             email=email,
             senha=self.gerador_hash.gerar_hash_senha(dados.senha),
-            foto_perfil=dados.foto_perfil,
         )
 
     async def obter(
         self,
         usuario_id: int,
+        usuario_autenticado: Usuario | None = None,
     ) -> Usuario:
+        if usuario_autenticado:
+            self._validar_acesso_ao_proprio_usuario(
+                usuario_id,
+                usuario_autenticado,
+            )
+
         usuario = await Usuario.get_or_none(id=usuario_id)
         if not usuario:
             raise self._usuario_nao_encontrado()
@@ -45,8 +51,9 @@ class ServicoUsuario:
         self,
         usuario_id: int,
         dados: AtualizarUsuarioRequest,
+        usuario_autenticado: Usuario,
     ) -> Usuario:
-        usuario = await self.obter(usuario_id)
+        usuario = await self.obter(usuario_id, usuario_autenticado)
         dados_atualizacao = dados.model_dump(exclude_unset=True)
 
         if 'email' in dados_atualizacao and dados.email:
@@ -69,9 +76,11 @@ class ServicoUsuario:
     async def deletar(
         self,
         usuario_id: int,
-    ) -> None:
-        usuario = await self.obter(usuario_id)
+        usuario_autenticado: Usuario,
+    ) -> Usuario:
+        usuario = await self.obter(usuario_id, usuario_autenticado)
         await usuario.delete()
+        return usuario
 
     async def _validar_email_disponivel(
         self,
@@ -91,3 +100,14 @@ class ServicoUsuario:
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Usuario nao encontrado.',
         )
+
+    @staticmethod
+    def _validar_acesso_ao_proprio_usuario(
+        usuario_id: int,
+        usuario_autenticado: Usuario,
+    ) -> None:
+        if usuario_autenticado.id != usuario_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Usuario autenticado nao pode acessar outro usuario.',
+            )
