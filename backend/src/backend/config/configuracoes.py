@@ -30,6 +30,7 @@ class Configuracoes(BaseSettings):
 
     # ** OLLAMA **
     ollama_host: str = 'http://ollama:11434'
+    ollama_embeddings_host: str = 'http://ollama:11434'
     embeddings_model: str = 'qwen3-embedding:0.6b'
     embeddings_dims: int = 1024
 

@@ -22,6 +22,9 @@ async def lifespan(app: FastAPI):
     ai_models_client = AsyncClient(config.ollama_host)
     app.state.ollama = ai_models_client
 
+    embeddings_client = AsyncClient(config.ollama_embeddings_host)
+    app.state.embeddings = embeddings_client
+
     await Tortoise.init(
         config=TORTOISE_CONFIG,
         _enable_global_fallback=True,
@@ -33,6 +36,7 @@ async def lifespan(app: FastAPI):
     await Tortoise.close_connections()
     await main_es_client.close()
     await ai_models_client.close()
+    await embeddings_client.close()
 
 
 def inicializar_app() -> FastAPI:

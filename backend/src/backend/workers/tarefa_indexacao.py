@@ -10,7 +10,7 @@ from backend.api.helpers.arquivos import (
     gerar_caminho_temporario,
     obter_nome_seguro,
 )
-from backend.api.services.embeddings import ServicoEmbeddings
+from backend.api.services.embeddings.indexacao import ProvedorEmbeddingsIndexacao
 from backend.api.services.indexacao.indexacao import ServicoIndexacao
 from backend.config.configuracoes import config
 from backend.workers.app_celery import (
@@ -29,34 +29,30 @@ def _indexar_documento(
     nome_indice: str,
     tipo_mapping: str,
 ) -> int:
-    cliente_es = Elasticsearch(config.elastic_url)
-
     try:
-        cliente_ollama = Client(host=config.ollama_host)
+        with (
+            Elasticsearch(config.elastic_url) as cliente_es,
+            Client(host=config.ollama_embeddings_host) as cliente_ollama
+        ):
+            provedor_embeddings = ProvedorEmbeddingsIndexacao(
+                cliente=cliente_ollama,
+                modelo=config.ollama_embeddings_host
+            )
+
+            servico = ServicoIndexacao(
+                cliente=cliente_es,
+                embeddings=provedor_embeddings,
+                nome_indice=nome_indice,
+            )
+
+            return servico.indexar(
+                caminho_arquivo=str(caminho),
+                nome_arquivo=nome_arquivo,
+                tipo_mapping=tipo_mapping,
+            )
     except Exception:
-        cliente_es.close()
+        print(f'Falha ao indexar {nome_arquivo} no índice {nome_indice}')
         raise
-
-    try:
-        servico = ServicoIndexacao(
-            cliente=cliente_es,
-            embeddings=ServicoEmbeddings(
-                client=cliente_ollama,
-                model=config.embeddings_model,
-            ),
-            nome_indice=nome_indice,
-        )
-        return servico.indexar(
-            caminho_arquivo=str(caminho),
-            nome_arquivo=nome_arquivo,
-            tipo_mapping=tipo_mapping,
-        )
-    finally:
-        try:
-            cliente_ollama.close()
-        finally:
-            cliente_es.close()
-
 
 @app_celery.task(name=NOME_TAREFA_PROCESSAR_ARQUIVO)
 def tarefa_processar_e_indexar(
