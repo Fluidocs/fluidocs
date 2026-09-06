@@ -2,7 +2,6 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from backend.domain.indices.mapping.tipo_mapping import TipoMapping
 
 
 class IndexacaoResponse(BaseModel):

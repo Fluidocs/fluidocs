@@ -1,37 +1,25 @@
 from typing import Any
+from .configuracao_mapper import ConfiguracaoMapperDocumentos
 
-from backend.config.configuracoes import config
-from .base_strategy import MappingBase
-
-class DocumentosStrategy(MappingBase):
-    def __init__(
-        self,
-        numero_shards: int = 1,
-        numero_replicas: int = 0,
-        b: float = 0.7,
-        k1: float = 0.6
-    ):
-        super().__init__(
-            numero_shards=numero_shards,
-            numero_replicas=numero_replicas
-        )
-
-        self.b = b
-        self.k1 = k1
+class MapperDocumentos:
+    def __init__(self, configuracao: ConfiguracaoMapperDocumentos):
+        self._configuracao = configuracao
 
 
     def construir(self) -> dict[str, Any]:
         return self._settings() | self._mappings()
-            
+
 
     def _settings(self) -> dict[str, Any]:
-        settings = self._base_settings() | {
+        settings = {
             'index': {
+                'number_of_shards': self._configuracao.numero_shards,
+                'number_of_replicas': self._configuracao.numero_replicas,
                 'similarity': {
                     'default': {
                         'type': 'BM25',
-                        'b': self.b,
-                        'k1': self.k1
+                        'b': self._configuracao.b,
+                        'k1': self._configuracao.k1
                     }
                 }
             },
@@ -54,26 +42,28 @@ class DocumentosStrategy(MappingBase):
             "mappings": {
                 "dynamic": "strict",
                 "properties": {
+                    "fonte_dados_id": {
+                        "type": "keyword"
+                    },
+                    "documento_id": {
+                        "type": "keyword"
+                    },
                     "nome_documento": {
                         "type": "keyword",
                     },
-                    # ainda não mapeado pra linkar com persistência no banco
-                    #"id_repositorio": {
-                    #    "type": "keyword",
-                    #},
                     "tipo_documento": {
                         "type": "keyword",
+                    },
+                    "id_trecho": {
+                        "type": "integer",
                     },
                     "conteudo": {
                         "type": "text",
                         "analyzer": "pt-BR",
                     },
-                    "id_trecho": {
-                        "type": "integer",
-                    },
                     "embeddings": {
                         "type": "dense_vector",
-                        "dims": config.embeddings_dims,
+                        "dims": self._configuracao.embeddings_dims,
                         "similarity": "cosine",
                         "index": True,
                     },

@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, Depends, status
 
 from backend.api.dependencies.auth import obter_usuario_autenticado
-from backend.api.helpers.indexacao import obter_servico_submissao_indexacao
+from backend.api.dependencies.indexacao import obter_servico_submissao_indexacao
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
 from backend.api.schemas.routes.indexacao import (

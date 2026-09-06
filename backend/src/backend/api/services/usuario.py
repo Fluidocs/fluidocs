@@ -7,15 +7,16 @@ from backend.api.schemas.backoffice.usuario_schemas import (
     CriarUsuarioRequest,
 )
 from backend.api.core.auth.gerador_hash import GeradorHash
-
+from .indice import ServicoIndice
 
 class ServicoUsuario:
     def __init__(
         self,
-        *,
         gerador_hash: GeradorHash,
+        servico_indice: ServicoIndice
     ) -> None:
         self.gerador_hash = gerador_hash
+        self._servico_indice = servico_indice
 
     async def criar(
         self,
@@ -24,11 +25,19 @@ class ServicoUsuario:
         email = normalizar_email(dados.email)
         await self._validar_email_disponivel(email)
 
-        return await Usuario.create(
+        usuario = await Usuario.create(
             nome=dados.nome,
             email=email,
             senha=self.gerador_hash.gerar_hash_senha(dados.senha),
         )
+
+        try:
+            await self._servico_indice.garantir_indice(usuario.id)
+        except Exception:
+            await usuario.delete()
+            raise
+
+        return usuario
 
     async def atualizar(
         self,
@@ -58,7 +67,9 @@ class ServicoUsuario:
         self,
         usuario: Usuario,
     ) -> Usuario:
+        self._servico_indice.remover_indice(usuario.id)
         await usuario.delete()
+
         return usuario
 
     async def _validar_email_disponivel(

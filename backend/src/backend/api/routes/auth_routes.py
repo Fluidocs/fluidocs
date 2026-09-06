@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from backend.api.dependencies.auth import obter_servico_auth
-from backend.api.dependencies.user import obter_servico_usuario
+from backend.api.dependencies.usuario import obter_servico_usuario
 from backend.api.schemas.auth_schemas import (
     CadastroUsuarioResponse,
     TokenResponse,
@@ -15,7 +15,6 @@ from backend.api.schemas.backoffice.usuario_schemas import (
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
 from backend.api.services.auth import ServicoAuth
 from backend.api.services.usuario import ServicoUsuario
-
 
 auth_router = APIRouter(tags=['auth'])
 

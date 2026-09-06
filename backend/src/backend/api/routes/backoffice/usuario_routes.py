@@ -3,8 +3,8 @@ from time import perf_counter
 from fastapi import APIRouter, Depends, status
 
 from backend.api.dependencies.auth import obter_usuario_autenticado
-from backend.api.dependencies.user import obter_servico_usuario
-from backend.api.helpers.user import montar_usuario_response
+from backend.api.dependencies.usuario import obter_servico_usuario
+from backend.api.helpers.usuario import montar_usuario_response
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.backoffice.usuario_schemas import (
     AtualizarUsuarioRequest,
@@ -12,7 +12,6 @@ from backend.api.schemas.backoffice.usuario_schemas import (
 )
 from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
 from backend.api.services.usuario import ServicoUsuario
-
 
 usuario_router = APIRouter(tags=['usuario'])
 
