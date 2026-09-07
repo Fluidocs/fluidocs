@@ -10,6 +10,7 @@ class UsuarioResponse(BaseModel):
     foto_perfil: str | None
     data_criacao: datetime
     data_atualizacao: datetime
+    comportamento_ia: str | None = None
 
 
 class CriarUsuarioRequest(BaseModel):
@@ -23,3 +24,4 @@ class AtualizarUsuarioRequest(BaseModel):
     email: EmailStr | None = Field(default=None, max_length=100)
     senha: str | None = Field(default=None, min_length=8, max_length=128)
     foto_perfil: str | None = Field(default=None, max_length=255)
+    comportamento_ia: str | None = None

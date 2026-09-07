@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Configuracoes(BaseSettings):
@@ -32,6 +32,11 @@ class Configuracoes(BaseSettings):
 
     # ** OLLAMA **
     ollama_chat_host: str = 'http://ollama:11434'
+    ollama_chat_model: str = 'llama3'
+    ollama_max_context_chars: int = Field(default=16_000, ge=1_000)
+    ollama_max_history_chars: int = Field(default=4_000, ge=0)
+    ollama_max_response_tokens: int = Field(default=384, ge=32)
+    ollama_keep_alive: str = '30m'
     embeddings_pesquisa_host: str = 'http://ollama:11434'
     embeddings_indexacao_host: str = 'http://ollama:11434'
     embeddings_model: str = 'qwen3-embedding:0.6b'

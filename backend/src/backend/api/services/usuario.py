@@ -60,6 +60,9 @@ class ServicoUsuario:
         if 'foto_perfil' in dados_atualizacao:
             usuario.foto_perfil = dados.foto_perfil
 
+        if 'comportamento_ia' in dados_atualizacao:
+            usuario.comportamento_ia = dados.comportamento_ia
+
         await usuario.save()
         return usuario
 
