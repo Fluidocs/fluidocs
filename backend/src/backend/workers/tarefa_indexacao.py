@@ -13,6 +13,8 @@ from backend.api.helpers.arquivos import (
 from backend.api.services.embeddings.indexacao import ProvedorEmbeddingsIndexacao
 from backend.api.services.indexacao.indexacao import ServicoIndexacao
 from backend.config.configuracoes import config
+from backend.domain.indices.identificador_documento import gerar_documento_id
+from backend.domain.indices.nome_indice import gerar_nome_indice
 from backend.workers.app_celery import (
     NOME_TAREFA_PROCESSAR_ARQUIVO,
     NOME_TAREFA_PROCESSAR_LOTE_ZIP,
@@ -26,9 +28,12 @@ logger = logging.getLogger(__name__)
 def _indexar_documento(
     caminho: Path,
     nome_arquivo: str,
-    nome_indice: str,
-    tipo_mapping: str,
+    usuario_id: int,
+    fonte_dados_id: int,
+    documento_id: str,
 ) -> int:
+    nome_indice = gerar_nome_indice(usuario_id)
+
     try:
         with (
             Elasticsearch(config.elastic_url) as cliente_es,
@@ -42,13 +47,14 @@ def _indexar_documento(
             servico = ServicoIndexacao(
                 cliente=cliente_es,
                 embeddings=provedor_embeddings,
-                nome_indice=nome_indice,
+                usuario_id=usuario_id,
             )
 
             return servico.indexar(
                 caminho_arquivo=str(caminho),
                 nome_arquivo=nome_arquivo,
-                tipo_mapping=tipo_mapping,
+                fonte_dados_id=fonte_dados_id,
+                documento_id=documento_id,
             )
     except Exception:
         print(f'Falha ao indexar {nome_arquivo} no índice {nome_indice}')
@@ -58,11 +64,13 @@ def _indexar_documento(
 def tarefa_processar_e_indexar(
     caminho_temporario: str,
     nome_original: str,
-    nome_indice: str,
-    tipo_mapping: str,
+    usuario_id: int,
+    fonte_dados_id: int,
+    documento_id: str,
 ) -> dict:
     """Executa extração, embeddings e bulk de um documento."""
     caminho = Path(caminho_temporario)
+    nome_indice = gerar_nome_indice(usuario_id)
 
     try:
         logger.info(
@@ -74,8 +82,9 @@ def tarefa_processar_e_indexar(
         quantidade = _indexar_documento(
             caminho,
             nome_original,
-            nome_indice,
-            tipo_mapping,
+            usuario_id,
+            fonte_dados_id,
+            documento_id,
         )
 
         logger.info(
@@ -86,6 +95,8 @@ def tarefa_processar_e_indexar(
         return {
             'nome_arquivo': nome_original,
             'nome_indice': nome_indice,
+            'fonte_dados_id': fonte_dados_id,
+            'documento_id': documento_id,
             'trechos_indexados': quantidade,
             'status': 'completed',
         }
@@ -98,17 +109,18 @@ def tarefa_processar_e_indexar(
 def tarefa_processar_lote_zip(
     caminho_zip: str,
     nome_zip: str,
-    nome_indice: str,
-    tipo_mapping: str,
+    usuario_id: int,
+    fonte_dados_id: int,
 ) -> dict:
     """Extrai o ZIP e cria um job independente para cada documento."""
     caminho = Path(caminho_zip)
+    nome_indice = gerar_nome_indice(usuario_id)
 
     try:
         ids_processamento = _enfileirar_documentos_zip(
             caminho,
-            nome_indice,
-            tipo_mapping,
+            usuario_id,
+            fonte_dados_id,
         )
 
         logger.info(
@@ -120,6 +132,7 @@ def tarefa_processar_lote_zip(
         return {
             'nome_arquivo': nome_zip,
             'nome_indice': nome_indice,
+            'fonte_dados_id': fonte_dados_id,
             'quantidade_arquivos': len(ids_processamento),
             'ids_processamento': ids_processamento,
             'status': 'completed',
@@ -134,8 +147,8 @@ def tarefa_processar_lote_zip(
 
 def _enfileirar_documentos_zip(
     caminho_zip: Path,
-    nome_indice: str,
-    tipo_mapping: str,
+    usuario_id: int,
+    fonte_dados_id: int,
 ) -> list[str]:
     ids_processamento: list[str] = []
 
@@ -147,8 +160,8 @@ def _enfileirar_documentos_zip(
             id_processamento = _enfileirar_documento_zip(
                 arquivo_zip,
                 arquivo,
-                nome_indice,
-                tipo_mapping,
+                usuario_id,
+                fonte_dados_id,
             )
             ids_processamento.append(id_processamento)
 
@@ -158,8 +171,8 @@ def _enfileirar_documentos_zip(
 def _enfileirar_documento_zip(
     arquivo_zip: ZipFile,
     arquivo: ZipInfo,
-    nome_indice: str,
-    tipo_mapping: str,
+    usuario_id: int,
+    fonte_dados_id: int,
 ) -> str:
     nome_arquivo = obter_nome_seguro(arquivo.filename)
     caminho_documento = gerar_caminho_temporario(nome_arquivo)
@@ -174,8 +187,9 @@ def _enfileirar_documento_zip(
         tarefa = tarefa_processar_e_indexar.delay(
             str(caminho_documento),
             nome_arquivo,
-            nome_indice,
-            tipo_mapping,
+            usuario_id,
+            fonte_dados_id,
+            gerar_documento_id(),
         )
     except Exception:
         caminho_documento.unlink(missing_ok=True)

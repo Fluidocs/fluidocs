@@ -19,7 +19,7 @@ class PesquisaLiteral(BasePesquisaStrategy):
             size=tamanho,
             query={
                 'function_score': {
-                    'query': {
+                    'query': self._aplicar_filtro_fontes_dados({
                         'match': {
                             'conteudo': {
                                 'query': pesquisa,
@@ -27,7 +27,7 @@ class PesquisaLiteral(BasePesquisaStrategy):
                                 'prefix_length': 1
                             }
                         }
-                    },
+                    }),
                     'script_score': {
                         'script': {
                             'source': '''

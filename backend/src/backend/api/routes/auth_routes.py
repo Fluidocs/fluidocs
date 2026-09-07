@@ -12,7 +12,7 @@ from backend.api.schemas.auth_schemas import (
 from backend.api.schemas.backoffice.usuario_schemas import (
     CriarUsuarioRequest,
 )
-from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
+from backend.api.schemas.base_response import BaseResponse, MetaSchema
 from backend.api.services.auth import ServicoAuth
 from backend.api.services.usuario import ServicoUsuario
 

@@ -9,6 +9,8 @@ class DocumentosIndexacaoStrategy(IndexacaoBase):
         self,
         *,
         nome_indice: str,
+        fonte_dados_id: int,
+        documento_id: str,
         nome_arquivo: str,
         tipo_arquivo: str,
         trechos: Sequence[str],
@@ -24,6 +26,8 @@ class DocumentosIndexacaoStrategy(IndexacaoBase):
             yield {
                 '_index': nome_indice,
                 '_source': {
+                    'fonte_dados_id': fonte_dados_id,
+                    'documento_id': documento_id,
                     'nome_documento': nome_arquivo,
                     'tipo_documento': tipo_arquivo,
                     'conteudo': conteudo,

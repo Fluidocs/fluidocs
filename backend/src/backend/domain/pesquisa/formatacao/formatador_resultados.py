@@ -49,6 +49,8 @@ class FormatadorResultados:
         )
 
         return DocumentoPesquisa(
+            fonte_dados_id=source["fonte_dados_id"],
+            documento_id=source["documento_id"],
             nome_documento=source["nome_documento"],
             pontuacao=hit.get("_score") or 0.0,
             trechos=[

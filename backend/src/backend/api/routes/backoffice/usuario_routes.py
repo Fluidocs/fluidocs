@@ -10,7 +10,7 @@ from backend.api.schemas.backoffice.usuario_schemas import (
     AtualizarUsuarioRequest,
     UsuarioResponse,
 )
-from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
+from backend.api.schemas.base_response import BaseResponse, MetaSchema
 from backend.api.services.usuario import ServicoUsuario
 
 usuario_router = APIRouter(tags=['usuario'])

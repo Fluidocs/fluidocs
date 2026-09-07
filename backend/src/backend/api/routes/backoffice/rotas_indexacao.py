@@ -6,14 +6,12 @@ from fastapi import APIRouter, Form, Depends, status
 from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.dependencies.indexacao import obter_servico_submissao_indexacao
 from backend.api.models.usuario import Usuario
-from backend.api.schemas.routes.base_response import BaseResponse, MetaSchema
-from backend.api.schemas.routes.indexacao import (
-    IndexacaoLoteResponse,
-    IndexacaoResponse,
-)
-from backend.api.schemas.routes.indexacao import (
+from backend.api.schemas.base_response import BaseResponse, MetaSchema
+from backend.api.schemas.backoffice.indexacao_schemas import (
     IndexacaoRequest,
-    IndexacaoLoteRequest
+    IndexacaoLoteRequest,
+    IndexacaoResponse,
+    IndexacaoLoteResponse,
 )
 from backend.api.services.indexacao.submissao_indexacao import (
     ServicoSubmissaoIndexacao,
@@ -37,10 +35,12 @@ async def indexar_arquivo(
     servico: ServicoSubmissaoIndexacao = Depends(obter_servico_submissao_indexacao),
 ) -> BaseResponse[IndexacaoResponse]:
     inicio = perf_counter()
-    id_processamento, nome_arquivo = await servico.enfileirar_arquivo(
-        dados.arquivo,
-        dados.nome_indice,
-        dados.tipo_mapping,
+    id_processamento, nome_arquivo, documento_id = (
+        await servico.enfileirar_arquivo(
+            dados.arquivo,
+            usuario.id,
+            dados.fonte_dados_id,
+        )
     )
 
     return BaseResponse(
@@ -48,8 +48,8 @@ async def indexar_arquivo(
         dados=IndexacaoResponse(
             id_processamento=id_processamento,
             nome_arquivo=nome_arquivo,
-            nome_indice=dados.nome_indice,
-            tipo_mapping=dados.tipo_mapping,
+            fonte_dados_id=dados.fonte_dados_id,
+            documento_id=documento_id,
         ),
     )
 
@@ -77,8 +77,8 @@ async def indexar_lote_zip(
     id_processamento, nome_arquivo, quantidade = (
         await servico.enfileirar_lote_zip(
             dados.arquivo_zip,
-            dados.nome_indice,
-            dados.tipo_mapping,
+            usuario.id,
+            dados.fonte_dados_id,
         )
     )
 
@@ -87,8 +87,7 @@ async def indexar_lote_zip(
         dados=IndexacaoLoteResponse(
             id_processamento=id_processamento,
             nome_arquivo=nome_arquivo,
-            nome_indice=dados.nome_indice,
-            tipo_mapping=dados.tipo_mapping,
+            fonte_dados_id=dados.fonte_dados_id,
             quantidade_arquivos=quantidade,
         ),
     )

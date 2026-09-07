@@ -7,8 +7,8 @@ from tortoise import Tortoise
 
 from backend.api.handlers import registrar_exception_handlers
 from backend.api.routes.router import build_router
-from backend.api.schemas.routes.base_response import BaseResponse
-from backend.api.schemas.routes.health_response import HealthResponse
+from backend.api.schemas.base_response import BaseResponse
+from backend.api.schemas.health_response import HealthResponse
 from backend.db.conexao import TORTOISE_CONFIG
 
 from .configuracoes import config

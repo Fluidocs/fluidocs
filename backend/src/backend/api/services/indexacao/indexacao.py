@@ -9,9 +9,11 @@ from backend.api.services.embeddings.indexacao import ProvedorEmbeddingsIndexaca
 from backend.domain.extracao.divisor_texto import DivisorTexto
 from backend.domain.extracao.extracao_factory import FactoryExtracao
 from backend.domain.extracao.tipos import FormatoArquivo
-from backend.domain.indices.indexacao import IndexacaoFactory
-from backend.domain.indices.indexacao.strategy import IndexacaoBase
-from backend.domain.indices.mapping.tipo_mapping import TipoMapping
+from backend.domain.indices.indexacao.strategy import (
+    DocumentosIndexacaoStrategy,
+    IndexacaoBase,
+)
+from backend.domain.indices.nome_indice import gerar_nome_indice
 from backend.config.configuracoes import config
 
 
@@ -20,29 +22,32 @@ class ServicoIndexacao:
         self,
         cliente: Elasticsearch,
         embeddings: ProvedorEmbeddingsIndexacao,
-        nome_indice: str,
+        usuario_id: int,
     ):
         self._cliente = cliente
         self._embeddings = embeddings
-        self._nome_indice = nome_indice
+        self._nome_indice = gerar_nome_indice(usuario_id)
 
     def indexar(
         self,
         caminho_arquivo: str,
         nome_arquivo: str,
-        tipo_mapping: TipoMapping | str = TipoMapping.DOCUMENTOS,
+        fonte_dados_id: int,
+        documento_id: str,
     ) -> int:
         trechos, formato = self._extrair_e_dividir(
             caminho_arquivo,
             nome_arquivo,
         )
-        strategy = IndexacaoFactory.get(tipo_mapping)
+        strategy = DocumentosIndexacaoStrategy()
 
         return self._indexar_trechos(
             strategy,
             trechos,
             nome_arquivo,
             formato,
+            fonte_dados_id,
+            documento_id,
         )
 
     @staticmethod
@@ -67,6 +72,8 @@ class ServicoIndexacao:
         trechos: Sequence[str],
         nome_arquivo: str,
         formato: FormatoArquivo,
+        fonte_dados_id: int,
+        documento_id: str,
     ) -> int:
         quantidade = 0
 
@@ -80,6 +87,8 @@ class ServicoIndexacao:
                 inicio,
                 nome_arquivo,
                 formato,
+                fonte_dados_id,
+                documento_id,
             )
             quantidade += len(lote)
 
@@ -92,10 +101,14 @@ class ServicoIndexacao:
         inicio: int,
         nome_arquivo: str,
         formato: FormatoArquivo,
+        fonte_dados_id: int,
+        documento_id: str,
     ) -> None:
         embeddings = self._embeddings.gerar_embeddings(trechos)
         acoes = strategy.construir_acoes(
             nome_indice=self._nome_indice,
+            fonte_dados_id=fonte_dados_id,
+            documento_id=documento_id,
             nome_arquivo=nome_arquivo,
             tipo_arquivo=formato.value,
             trechos=trechos,

@@ -22,7 +22,7 @@ def build_router() -> APIRouter:
     )
     router.include_router(
         pesquisa_router,
-        prefix='/'
+        prefix=''
     )
 
     return router

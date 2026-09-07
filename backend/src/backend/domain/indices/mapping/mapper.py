@@ -43,7 +43,7 @@ class MapperDocumentos:
                 "dynamic": "strict",
                 "properties": {
                     "fonte_dados_id": {
-                        "type": "keyword"
+                        "type": "integer"
                     },
                     "documento_id": {
                         "type": "keyword"

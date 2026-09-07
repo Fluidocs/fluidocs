@@ -1,11 +1,12 @@
 from elasticsearch import AsyncElasticsearch, ConnectionError, ConnectionTimeout, NotFoundError, BadRequestError
 
 from backend.config.configuracoes import config
-from ..schemas.routes.pesquisa.pesquisa_request import PesquisaRequest
+from ..schemas.backoffice.pesquisa_schemas import PesquisaRequest
 from backend.api.helpers.exceptions.elasticsearch import extrair_detalhe_elasticsearch
 from backend.domain.pesquisa.factory_pesquisa import FactoryPesquisa
 from backend.domain.pesquisa.contexto import ContextoPesquisa, ConfiguracaoPesquisaHibrida
 from backend.domain.pesquisa.formatacao.tipos import ResultadoPesquisa
+from backend.domain.indices.nome_indice import gerar_nome_indice
 
 from backend.core.exceptions import MotorPesquisaIndisponivelError
 from backend.domain.indices.exceptions import IndiceNaoEncontradoError
@@ -23,18 +24,20 @@ class ServicoPesquisa:
 
     async def pesquisar_async(
         self,
+        usuario_id: int,
         dados: PesquisaRequest
     ) -> ResultadoPesquisa:
+        nome_indice = gerar_nome_indice(usuario_id)
         try:
-            return await self._executar_pesquisa(dados)
+            return await self._executar_pesquisa(nome_indice, dados)
         except (ConnectionError, ConnectionTimeout) as erro:
             raise MotorPesquisaIndisponivelError() from erro
         except NotFoundError as erro:
-            raise IndiceNaoEncontradoError(dados.nome_indice) from erro
+            raise IndiceNaoEncontradoError(nome_indice) from erro
         except BadRequestError as erro:
             detalhe = extrair_detalhe_elasticsearch(erro)
             raise PesquisaInvalidaError(
-                nome_indice=dados.nome_indice,
+                nome_indice=nome_indice,
                 mensagem='Os parâmetros da pesquisa são inválidos.',
                 detalhe=detalhe if config.debug else None
             ) from erro
@@ -42,11 +45,13 @@ class ServicoPesquisa:
 
     async def _executar_pesquisa(
         self,
+        nome_indice: str,
         dados: PesquisaRequest
     ) -> ResultadoPesquisa:
         contexto = ContextoPesquisa(
             client=self._client,
-            nome_indice=dados.nome_indice
+            nome_indice=nome_indice,
+            fonte_dados_ids=tuple(dados.fonte_dados_ids),
         )
 
         configuracao_hibrida = ConfiguracaoPesquisaHibrida(

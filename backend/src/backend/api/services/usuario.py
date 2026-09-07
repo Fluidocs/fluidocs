@@ -67,7 +67,7 @@ class ServicoUsuario:
         self,
         usuario: Usuario,
     ) -> Usuario:
-        self._servico_indice.remover_indice(usuario.id)
+        await self._servico_indice.remover_indice(usuario.id)
         await usuario.delete()
 
         return usuario
