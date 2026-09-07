@@ -11,7 +11,7 @@ class BasePesquisaStrategy(ABC):
 
     def _collapse(self) -> dict:
         return {
-            "field": "nome_documento",
+            "field": "documento_id",
             "inner_hits": {
                 "name": "best_scores",
                 "size": 5,
@@ -26,8 +26,30 @@ class BasePesquisaStrategy(ABC):
         return {
             "total_documentos_unicos": {
                 "cardinality": {
-                    "field": "nome_documento"
+                    "field": "documento_id"
                 }
+            }
+        }
+
+    def _filtro_fontes_dados(self) -> dict | None:
+        if not self._context.fonte_dados_ids:
+            return None
+
+        return {
+            'terms': {
+                'fonte_dados_id': list(self._context.fonte_dados_ids),
+            }
+        }
+
+    def _aplicar_filtro_fontes_dados(self, query: dict) -> dict:
+        filtro = self._filtro_fontes_dados()
+        if filtro is None:
+            return query
+
+        return {
+            'bool': {
+                'must': [query],
+                'filter': [filtro],
             }
         }
 

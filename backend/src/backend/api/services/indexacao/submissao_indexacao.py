@@ -18,7 +18,8 @@ from backend.domain.indices.exceptions import IndiceNaoEncontradoError
 from backend.domain.indices.indexacao.exceptions import (
     ArquivoIndexacaoInvalidoError,
 )
-from backend.domain.indices.mapping.tipo_mapping import TipoMapping
+from backend.domain.indices.identificador_documento import gerar_documento_id
+from backend.domain.indices.nome_indice import gerar_nome_indice
 from backend.workers.app_celery import (
     NOME_TAREFA_PROCESSAR_ARQUIVO,
     NOME_TAREFA_PROCESSAR_LOTE_ZIP,
@@ -33,10 +34,12 @@ class ServicoSubmissaoIndexacao:
     async def enfileirar_arquivo(
         self,
         arquivo: UploadFile,
-        nome_indice: str,
-        tipo_mapping: TipoMapping,
-    ) -> tuple[str, str]:
+        usuario_id: int,
+        fonte_dados_id: int,
+    ) -> tuple[str, str, str]:
         nome_arquivo = obter_nome_seguro(arquivo.filename)
+        nome_indice = gerar_nome_indice(usuario_id)
+        documento_id = gerar_documento_id()
         self._validar_nome_e_extensao(nome_arquivo)
         await self._validar_indice(nome_indice)
         caminho, tamanho = await armazenar_upload_temporario(
@@ -53,22 +56,24 @@ class ServicoSubmissaoIndexacao:
                 NOME_TAREFA_PROCESSAR_ARQUIVO,
                 str(caminho),
                 nome_arquivo,
-                nome_indice,
-                tipo_mapping.value,
+                usuario_id,
+                fonte_dados_id,
+                documento_id,
             )
         except Exception:
             caminho.unlink(missing_ok=True)
             raise
 
-        return id_processamento, nome_arquivo
+        return id_processamento, nome_arquivo, documento_id
 
     async def enfileirar_lote_zip(
         self,
         arquivo: UploadFile,
-        nome_indice: str,
-        tipo_mapping: TipoMapping,
+        usuario_id: int,
+        fonte_dados_id: int,
     ) -> tuple[str, str, int]:
         nome_arquivo = obter_nome_seguro(arquivo.filename)
+        nome_indice = gerar_nome_indice(usuario_id)
         self._validar_nome_zip(nome_arquivo)
         await self._validar_indice(nome_indice)
         caminho, tamanho = await armazenar_upload_temporario(
@@ -89,8 +94,8 @@ class ServicoSubmissaoIndexacao:
                 NOME_TAREFA_PROCESSAR_LOTE_ZIP,
                 str(caminho),
                 nome_arquivo,
-                nome_indice,
-                tipo_mapping.value,
+                usuario_id,
+                fonte_dados_id,
             )
         except Exception:
             caminho.unlink(missing_ok=True)
@@ -110,7 +115,10 @@ class ServicoSubmissaoIndexacao:
             raise ArquivoIndexacaoInvalidoError(mensagem)
 
     @staticmethod
-    def _enfileirar_tarefa(nome_tarefa: str, *argumentos: str) -> str:
+    def _enfileirar_tarefa(
+        nome_tarefa: str,
+        *argumentos: str | int,
+    ) -> str:
         return app_celery.send_task(nome_tarefa, args=argumentos).id
 
     @staticmethod

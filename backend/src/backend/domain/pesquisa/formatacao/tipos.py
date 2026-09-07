@@ -10,6 +10,8 @@ class TrechoPesquisa:
 
 @dataclass(frozen=True, slots=True)
 class DocumentoPesquisa:
+    fonte_dados_id: int
+    documento_id: str
     nome_documento: str
     pontuacao: float
     trechos: list[TrechoPesquisa]

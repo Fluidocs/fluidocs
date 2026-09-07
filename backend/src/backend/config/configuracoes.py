@@ -27,6 +27,8 @@ class Configuracoes(BaseSettings):
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'
+    numero_shards: int = 1
+    numero_replicas: int = 0
 
     # ** OLLAMA **
     ollama_chat_host: str = 'http://ollama:11434'

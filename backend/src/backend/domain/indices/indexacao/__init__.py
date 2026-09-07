@@ -1,3 +1,3 @@
-from .indexacao_factory import IndexacaoFactory
+from .strategy import DocumentosIndexacaoStrategy, IndexacaoBase
 
-__all__ = ['IndexacaoFactory']
+__all__ = ['DocumentosIndexacaoStrategy', 'IndexacaoBase']

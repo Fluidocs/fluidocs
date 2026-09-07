@@ -62,14 +62,14 @@ class PesquisaHibrida(BasePesquisaStrategy):
     ) -> dict[str, Any]:
         return {
             'function_score': {
-                'query': {
+                'query': self._aplicar_filtro_fontes_dados({
                     'match': {
                         'conteudo': {
                             'query': pesquisa,
                             'fuzziness': 'AUTO'
                         }
                     }
-                },
+                }),
                 'script_score': {
                     'script': {
                         'source': '''
@@ -99,10 +99,16 @@ class PesquisaHibrida(BasePesquisaStrategy):
         numero_candidatos = max(k_vetorial, k_vetorial * self._FATOR_NUMERO_CANDIDATOS)
         numero_candidatos = min(numero_candidatos, self._LIMITE_KNN)
         
-        return {
+        busca: dict[str, Any] = {
             'field': 'embeddings',
             'query_vector': vetor,
             'k': k_vetorial,
             'num_candidates': numero_candidatos,
             'boost': self._config.boost_vetorial
         }
+
+        filtro = self._filtro_fontes_dados()
+        if filtro is not None:
+            busca['filter'] = filtro
+
+        return busca

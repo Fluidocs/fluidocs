@@ -6,6 +6,7 @@ from math import isclose
 class ContextoPesquisa:
     client: AsyncElasticsearch
     nome_indice: str
+    fonte_dados_ids: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

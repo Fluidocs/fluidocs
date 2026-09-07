@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends
 from time import perf_counter
 
-from backend.api.schemas.routes.pesquisa.pesquisa_request import PesquisaRequest
-from backend.api.schemas.routes.pesquisa.pesquisa_response import DocumentoPesquisaResponse
-from backend.api.schemas.routes.base_response import BaseResponse
+from backend.api.schemas.base_response import BaseResponse
+from backend.api.schemas.backoffice.pesquisa_schemas import PesquisaRequest, DocumentoPesquisaResponse
 from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.dependencies.pesquisa import obter_servico_pesquisa
 from backend.api.models.usuario import Usuario
@@ -26,7 +25,7 @@ async def pesquisar(
     servico_pesquisa: ServicoPesquisa = Depends(obter_servico_pesquisa)
 ) -> BaseResponse[list[DocumentoPesquisaResponse]]:
     inicio = perf_counter()
-    response = await servico_pesquisa.pesquisar_async(dados)
+    response = await servico_pesquisa.pesquisar_async(usuario.id, dados)
 
     return {
         'meta': { 'tempo_execucao': perf_counter() - inicio },

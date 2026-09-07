@@ -9,6 +9,8 @@ class IndexacaoBase(ABC):
         self,
         *,
         nome_indice: str,
+        fonte_dados_id: int,
+        documento_id: str,
         nome_arquivo: str,
         tipo_arquivo: str,
         trechos: Sequence[str],
