@@ -5,6 +5,7 @@ from zipfile import BadZipFile, ZipFile, ZipInfo
 from elasticsearch import AsyncElasticsearch
 from fastapi import UploadFile
 
+from backend.api.services.fontes_dados import ServicoFontesDeDados
 from backend.api.helpers.arquivos import (
     armazenar_upload_temporario,
     obter_extensao,
@@ -28,8 +29,13 @@ from backend.workers.app_celery import (
 
 
 class ServicoSubmissaoIndexacao:
-    def __init__(self, cliente: AsyncElasticsearch):
+    def __init__(
+        self, 
+        cliente: AsyncElasticsearch,
+        servico_fontes: ServicoFontesDeDados
+    ):
         self._cliente = cliente
+        self._servico_fontes = servico_fontes
 
     async def enfileirar_arquivo(
         self,
@@ -41,7 +47,9 @@ class ServicoSubmissaoIndexacao:
         nome_indice = gerar_nome_indice(usuario_id)
         documento_id = gerar_documento_id()
         self._validar_nome_e_extensao(nome_arquivo)
-        await self._validar_indice(nome_indice)
+
+        await self._validar_destino(nome_indice, fonte_dados_id, usuario_id)
+
         caminho, tamanho = await armazenar_upload_temporario(
             arquivo,
             nome_arquivo,
@@ -66,6 +74,7 @@ class ServicoSubmissaoIndexacao:
 
         return id_processamento, nome_arquivo, documento_id
 
+
     async def enfileirar_lote_zip(
         self,
         arquivo: UploadFile,
@@ -75,7 +84,9 @@ class ServicoSubmissaoIndexacao:
         nome_arquivo = obter_nome_seguro(arquivo.filename)
         nome_indice = gerar_nome_indice(usuario_id)
         self._validar_nome_zip(nome_arquivo)
-        await self._validar_indice(nome_indice)
+
+        await self._validar_destino(nome_indice, fonte_dados_id, usuario_id)
+        
         caminho, tamanho = await armazenar_upload_temporario(
             arquivo,
             nome_arquivo,
@@ -103,16 +114,32 @@ class ServicoSubmissaoIndexacao:
 
         return id_processamento, nome_arquivo, quantidade
 
+
     @tratar_indisponibilidade_elasticsearch
     async def _validar_indice(self, nome_indice: str) -> None:
         indice_existe = await self._cliente.indices.exists(index=nome_indice)
         if not indice_existe:
             raise IndiceNaoEncontradoError(nome_indice)
 
+
     @staticmethod
     def _validar_arquivo_nao_vazio(tamanho: int, mensagem: str) -> None:
         if tamanho == 0:
             raise ArquivoIndexacaoInvalidoError(mensagem)
+
+
+    async def _validar_destino(
+        self,
+        nome_indice: str,
+        fonte_dados_id: int,
+        usuario_id: int,
+    ) -> None:
+        await self._servico_fontes.validar_existencia(
+            [fonte_dados_id],
+            usuario_id,
+        )
+        await self._validar_indice(nome_indice)
+
 
     @staticmethod
     def _enfileirar_tarefa(
@@ -121,12 +148,14 @@ class ServicoSubmissaoIndexacao:
     ) -> str:
         return app_celery.send_task(nome_tarefa, args=argumentos).id
 
+
     @staticmethod
     def _validar_nome_zip(nome_arquivo: str) -> None:
         if obter_extensao(nome_arquivo) != 'zip':
             raise ArquivoIndexacaoInvalidoError(
                 'O lote enviado deve possuir extensão .zip.'
             )
+
 
     @staticmethod
     def _validar_nome_e_extensao(nome_arquivo: str) -> None:
@@ -145,6 +174,7 @@ class ServicoSubmissaoIndexacao:
                 f'Formato não suportado. Formatos permitidos: {formatos}.'
             ) from erro
 
+
     @classmethod
     def _validar_lote_zip(cls, caminho: Path) -> int:
         try:
@@ -158,6 +188,7 @@ class ServicoSubmissaoIndexacao:
                 'O arquivo ZIP é inválido ou está corrompido.'
             ) from erro
 
+
     @staticmethod
     def _obter_arquivos(arquivo_zip: ZipFile) -> list[ZipInfo]:
         arquivos = [info for info in arquivo_zip.infolist() if not info.is_dir()]
@@ -167,6 +198,7 @@ class ServicoSubmissaoIndexacao:
             )
         return arquivos
 
+
     @classmethod
     def _validar_arquivos(cls, arquivos: list[ZipInfo]) -> None:
         for arquivo in arquivos:
@@ -175,6 +207,7 @@ class ServicoSubmissaoIndexacao:
                 raise ArquivoIndexacaoInvalidoError(
                     'Arquivos ZIP protegidos por senha não são suportados.'
                 )
+
 
     @staticmethod
     def _validar_integridade(arquivo_zip: ZipFile) -> None:

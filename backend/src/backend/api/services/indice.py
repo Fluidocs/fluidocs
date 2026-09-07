@@ -1,4 +1,4 @@
-from typing import List
+from fastapi import HTTPException, status
 from elasticsearch import (
     AsyncElasticsearch, 
     NotFoundError, 
@@ -50,3 +50,37 @@ class ServicoIndice:
             )
         except NotFoundError:
             return 
+
+
+    @tratar_indisponibilidade_elasticsearch
+    async def remover_documentos_da_fonte(
+        self,
+        usuario_id: int,
+        fonte_dados_id: int
+    ) -> int:
+        nome_indice = gerar_nome_indice(usuario_id)
+
+        try:
+            resultado = await self._cliente.delete_by_query(
+                index=nome_indice,
+                query={
+                    'term': {
+                        'fonte_dados_id': fonte_dados_id
+                    }
+                },
+                refresh=True
+            )
+        except NotFoundError:
+            return 0 
+
+        falhas = resultado.get('failures', [])
+        if falhas:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    'Falhas ao processar a exclusão de trechos' 
+                    f'ao deletar fonte de dados (ID: {fonte_dados_id}).'
+                )
+            )
+
+        return resultado.get('deleted', 0)
