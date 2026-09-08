@@ -10,4 +10,5 @@ def montar_usuario_response(usuario: Usuario) -> UsuarioResponse:
         foto_perfil=usuario.foto_perfil,
         data_criacao=usuario.data_criacao,
         data_atualizacao=usuario.data_atualizacao,
+        comportamento_ia=usuario.comportamento_ia,
     )

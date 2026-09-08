@@ -4,6 +4,7 @@ from .auth_routes import auth_router
 from .backoffice.rotas_indexacao import indexacao_router
 from .backoffice.pesquisa_routes import pesquisa_router
 from .backoffice.usuario_routes import usuario_router
+from .backoffice.conversa_routes import conversa_router
 
 def build_router() -> APIRouter:
     router = APIRouter()
@@ -24,5 +25,7 @@ def build_router() -> APIRouter:
         pesquisa_router,
         prefix=''
     )
+
+    router.include_router(conversa_router)
 
     return router

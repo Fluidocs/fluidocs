@@ -8,6 +8,7 @@ class Usuario(models.Model):
     foto_perfil = fields.CharField(null=True, max_length=255)
     data_criacao = fields.DatetimeField(auto_now_add=True)
     data_atualizacao = fields.DatetimeField(auto_now=True)
+    comportamento_ia = fields.TextField(null=True)
 
     class Meta:
         table = "usuario"
