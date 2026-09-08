@@ -1,9 +1,15 @@
-from fastapi import HTTPException, status
 from collections.abc import Collection
 
+from fastapi import HTTPException, status
+
 from .indice import ServicoIndice
-from backend.api.models.fonte_de_dados import FonteDeDados
-from backend.api.schemas.backoffice.fontes_dados_schemas import FonteDadosCreateRequest, FonteDadosUpdateRequest
+from backend.api.models.fonte_de_dados import (
+    StatusFonte,
+    FonteDeDados,
+)
+from backend.api.schemas.backoffice.fontes_dados_schemas import (
+    FonteDadosCreateRequest,
+)
 
 class ServicoFontesDeDados:
     def __init__(self, servico_indices: ServicoIndice):
@@ -15,7 +21,8 @@ class ServicoFontesDeDados:
         usuario_id: int
     ) -> list[FonteDeDados]:
         return await FonteDeDados.filter(
-            usuario_id=usuario_id
+            usuario_id=usuario_id,
+            status=StatusFonte.ATIVA,
         )
 
 
@@ -33,6 +40,7 @@ class ServicoFontesDeDados:
             await FonteDeDados.filter(
                 id__in=ids_solicitados,
                 usuario_id=usuario_id,
+                status=StatusFonte.ATIVA,
             ).values_list('id', flat=True)
         )
 
@@ -42,9 +50,7 @@ class ServicoFontesDeDados:
             ids_formatados = ', '.join(map(str, ids_ausentes))
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=(
-                    'Fontes de dados {id_formatados} não encontradas.'
-                ),
+                detail=f'Fontes de dados {ids_formatados} não encontradas.',
             )
 
 
@@ -67,7 +73,8 @@ class ServicoFontesDeDados:
     ) -> FonteDeDados:
         fonte_dados = await FonteDeDados.get_or_none(
             id=fonte_id,
-            usuario_id=usuario_id
+            usuario_id=usuario_id,
+            status=StatusFonte.ATIVA,
         )
 
         if fonte_dados is None: 
@@ -95,11 +102,21 @@ class ServicoFontesDeDados:
         fonte_id: int, 
         usuario_id: int
     ) -> FonteDeDados:
-        fonte_dados = await self.obter(fonte_id, usuario_id)
+        fonte_dados = await FonteDeDados.get_or_none(
+            id=fonte_id,
+            usuario_id=usuario_id,
+        )
+
+        if fonte_dados is None:
+            raise self.not_found_error(fonte_id)
+
+        if fonte_dados.status != StatusFonte.DELETANDO:
+            fonte_dados.status = StatusFonte.DELETANDO
+            await fonte_dados.save()
 
         await self._servico_indices.remover_documentos_da_fonte(
             usuario_id,
-            fonte_id
+            fonte_id,
         )
         await fonte_dados.delete()
 

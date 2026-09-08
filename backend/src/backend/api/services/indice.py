@@ -1,11 +1,11 @@
-from fastapi import HTTPException, status
 from elasticsearch import (
-    AsyncElasticsearch, 
-    NotFoundError, 
-    BadRequestError
+    AsyncElasticsearch,
+    BadRequestError,
+    NotFoundError,
 )
+from fastapi import HTTPException, status
 
-from backend.domain.indices.exceptions import *
+from backend.domain.indices.exceptions import ConfiguracaoInvalidaError
 from backend.domain.indices.mapping.mapper import MapperDocumentos
 from backend.domain.indices.nome_indice import gerar_nome_indice
 from backend.api.helpers.exceptions.elasticsearch import (
@@ -56,11 +56,12 @@ class ServicoIndice:
     async def remover_documentos_da_fonte(
         self,
         usuario_id: int,
-        fonte_dados_id: int
+        fonte_dados_id: int,
     ) -> int:
         nome_indice = gerar_nome_indice(usuario_id)
 
         try:
+            await self._cliente.indices.refresh(index=nome_indice)
             resultado = await self._cliente.delete_by_query(
                 index=nome_indice,
                 query={
@@ -71,14 +72,14 @@ class ServicoIndice:
                 refresh=True
             )
         except NotFoundError:
-            return 0 
+            return 0
 
         falhas = resultado.get('failures', [])
         if falhas:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    'Falhas ao processar a exclusão de trechos' 
+                    'Falhas ao processar a exclusão de trechos '
                     f'ao deletar fonte de dados (ID: {fonte_dados_id}).'
                 )
             )
