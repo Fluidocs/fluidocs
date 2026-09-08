@@ -24,6 +24,7 @@ class Configuracoes(BaseSettings):
     secret_key: str
     jwt_algorithm: str = 'HS256'
     jwt_access_token_expire_minutes: int = 20
+    limite_chaves_api_por_usuario: int = 5
 
     # ** ELASTICSEARCH **
     elastic_url: str = 'http://elasticsearch:9200'
