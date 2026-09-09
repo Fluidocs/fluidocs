@@ -37,3 +37,8 @@ backend = "backend:main"
 [build-system]
 requires = ["uv_build>=0.12.4,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.aerich]
+tortoise_orm = "backend.db.conexao.TORTOISE_CONFIG"
+location = "./src/backend/db/migrations"
+src_folder = "./src"

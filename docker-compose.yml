@@ -4,7 +4,7 @@ services:
       context: ./frontend
       dockerfile: .docker/Dockerfile
       target: dev
-    container_name: fluidocs_frontend_dev
+    container_name: fluidocs-frontend
     ports:
       - "3000:3000"
     volumes:
@@ -51,7 +51,7 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-wolfi:9.3.1
-    container_name: es-fluidocs
+    container_name: fluidocs-es
     environment:
       - node_name=es01
       - cluster_name=es-docker-cluster
