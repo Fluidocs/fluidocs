@@ -14,16 +14,21 @@ services:
       - .env
     environment:
       - VITE_API_URL=/api
-      - VITE_API_PROXY_TARGET=http://host.docker.internal:8000
+      - VITE_API_PROXY_TARGET=http://api:8000
       - HOST=0.0.0.0
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - VITE_HMR_HOST=localhost
       - VITE_HMR_CLIENT_PORT=3000
+    depends_on:
+      - api
+    networks:
+      - fluidocs_network
+
   api:
     container_name: fluidocs-api
     image: fluidocs-api:dev
-    build: 
+    build:
       context: ./backend
       dockerfile: .docker/Dockerfile
     env_file:
@@ -46,46 +51,16 @@ services:
         condition: service_started
     networks:
       - fluidocs_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-wolfi:9.3.1
-    container_name: fluidocs-es
-    environment:
-      - node_name=es01
-      - cluster_name=es-docker-cluster
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    ports:
-      - "9200:9200"
-    volumes:
-      - elastic_data:/usr/share/elasticsearch/data
-    networks:
-      - fluidocs_network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
-  ollama:
-    image: ollama/ollama
-    container_name: fluidocs-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    restart: unless-stopped
-    networks:
-      - fluidocs_network
-
-  celery-worker:
+  api-worker:
     image: fluidocs-api:dev
-    container_name: elastic-worker
-    command: uv run celery -A backend.workers.app_celery worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-1}
+    container_name: fluidocs-api-worker
+    command: >
+      uv run celery
+      -A backend.workers.app_celery
+      worker
+      --loglevel=info
+      --concurrency=${CELERY_WORKER_CONCURRENCY:-1}
     env_file:
       - .env
     restart: unless-stopped
@@ -103,6 +78,43 @@ services:
     networks:
       - fluidocs_network
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-wolfi:9.3.1
+    container_name: fluidocs-es
+    environment:
+      - node_name=es01
+      - cluster_name=es-docker-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    networks:
+      - fluidocs_network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:9200/_cluster/health || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  ollama:
+    image: ollama/ollama
+    container_name: fluidocs-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - fluidocs_network
+
   redis:
     image: redis:8.6.2-alpine
     container_name: fluidocs-redis
@@ -114,7 +126,7 @@ services:
     networks:
       - fluidocs_network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -127,14 +139,18 @@ services:
       - POSTGRES_DB=${NOME_BD}
       - POSTGRES_USER=${USUARIO_BD}
       - POSTGRES_PASSWORD=${SENHA_BD}
-    ports: 
+    ports:
       - "${PORTA_BD}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - fluidocs_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USUARIO_BD} -d ${NOME_BD}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${USUARIO_BD} -d ${NOME_BD}"
+        ]
       interval: 5s
       timeout: 30s
       retries: 10

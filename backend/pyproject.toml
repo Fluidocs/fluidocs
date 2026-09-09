@@ -26,11 +26,6 @@ dependencies = [
     "tortoise-orm>=1.1.8",
 ]
 
-[tool.aerich]
-tortoise_orm = "backend.db.conexao.TORTOISE_CONFIG"
-location = "./src/backend/db/migrations/"
-src_folder = "./src"
-
 [project.scripts]
 backend = "backend:main"
 
