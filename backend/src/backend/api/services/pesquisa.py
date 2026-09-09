@@ -3,6 +3,7 @@ from elasticsearch import AsyncElasticsearch, ConnectionError, ConnectionTimeout
 from backend.config.configuracoes import config
 from ..schemas.backoffice.pesquisa_schemas import PesquisaRequest
 from backend.api.helpers.exceptions.elasticsearch import extrair_detalhe_elasticsearch
+from backend.api.services.fontes_dados import ServicoFontesDeDados
 from backend.domain.pesquisa.factory_pesquisa import FactoryPesquisa
 from backend.domain.pesquisa.contexto import ContextoPesquisa, ConfiguracaoPesquisaHibrida
 from backend.domain.pesquisa.formatacao.tipos import ResultadoPesquisa
@@ -16,10 +17,12 @@ class ServicoPesquisa:
     def __init__(
         self, 
         client: AsyncElasticsearch,
-        factory: FactoryPesquisa
+        factory: FactoryPesquisa,
+        servico_fontes: ServicoFontesDeDados
     ):
         self._client = client 
         self._factory = factory
+        self._servico_fontes = servico_fontes
 
 
     async def pesquisar_async(
@@ -27,7 +30,9 @@ class ServicoPesquisa:
         usuario_id: int,
         dados: PesquisaRequest
     ) -> ResultadoPesquisa:
+        await self._servico_fontes.validar_existencia(dados.fonte_dados_ids, usuario_id)
         nome_indice = gerar_nome_indice(usuario_id)
+
         try:
             return await self._executar_pesquisa(nome_indice, dados)
         except (ConnectionError, ConnectionTimeout) as erro:
