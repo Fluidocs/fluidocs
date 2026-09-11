@@ -4,10 +4,8 @@ from backend.api.core.auth.gerador_chave_api import GeradorChaveAPI
 from backend.api.models.chave_api import ChaveAPI
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.backoffice.chave_api_schemas import (
-    AtualizarChaveAPIRequest,
     CriarChaveAPIRequest,
 )
-from backend.config.configuracoes import config
 
 
 class ServicoChaveAPI:
@@ -57,18 +55,13 @@ class ServicoChaveAPI:
         self,
         usuario: Usuario,
         chave_api_id: int,
-        dados: AtualizarChaveAPIRequest,
+        dados_update: dict,
     ) -> ChaveAPI:
         chave_api = await self.obter(usuario, chave_api_id)
-        dados_atualizacao = dados.model_dump(exclude_unset=True)
 
-        if 'nome' in dados_atualizacao and dados.nome is not None:
-            chave_api.nome = dados.nome
-
-        if 'descricao' in dados_atualizacao:
-            chave_api.descricao = dados.descricao
-
+        chave_api.update_from_dict(dados_update)
         await chave_api.save()
+
         return chave_api
 
     async def deletar(
@@ -95,7 +88,7 @@ class ServicoChaveAPI:
 
     async def _validar_limite_chaves_usuario(self, usuario: Usuario) -> None:
         total_chaves = await ChaveAPI.filter(usuario_id=usuario.id).count()
-        if total_chaves >= config.limite_chaves_api_por_usuario:
+        if total_chaves >= usuario.limite_chaves_api:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail='Limite de chaves de API atingido.',

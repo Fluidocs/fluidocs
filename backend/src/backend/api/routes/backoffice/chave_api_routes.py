@@ -1,10 +1,9 @@
 from time import perf_counter
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.dependencies.auth import obter_usuario_autenticado
 from backend.api.dependencies.chave_api import obter_servico_chave_api
-from backend.api.helpers.chave_api import montar_chave_api_response
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.backoffice.chave_api_schemas import (
     AtualizarChaveAPIRequest,
@@ -31,15 +30,11 @@ async def criar_chave_api(
 ) -> BaseResponse[CriarChaveAPIResponse]:
     inicio = perf_counter()
     chave_api, token = await servico.criar(usuario_autenticado, dados)
+    chave_api.token = token
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=CriarChaveAPIResponse(
-            id=chave_api.id,
-            nome=chave_api.nome,
-            descricao=chave_api.descricao,
-            token=token,
-        ),
+        dados=CriarChaveAPIResponse.model_validate(chave_api),
     )
 
 
@@ -58,7 +53,7 @@ async def listar_chaves_api(
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=[montar_chave_api_response(chave_api) for chave_api in chaves_api],
+        dados=[ChaveAPIResponse.model_validate(chave_api) for chave_api in chaves_api],
     )
 
 
@@ -78,7 +73,7 @@ async def obter_chave_api(
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=montar_chave_api_response(chave_api),
+        dados=ChaveAPIResponse.model_validate(chave_api),
     )
 
 
@@ -95,11 +90,22 @@ async def atualizar_chave_api(
     servico: ServicoChaveAPI = Depends(obter_servico_chave_api),
 ) -> BaseResponse[ChaveAPIResponse]:
     inicio = perf_counter()
-    chave_api = await servico.atualizar(usuario_autenticado, chave_api_id, dados)
+    campos_update = dados.model_dump(exclude_unset=True)
+    if not campos_update:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail='Dados para a atualizacao nao podem estar em branco.',
+        )
+
+    chave_api = await servico.atualizar(
+        usuario_autenticado,
+        chave_api_id,
+        campos_update,
+    )
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=montar_chave_api_response(chave_api),
+        dados=ChaveAPIResponse.model_validate(chave_api),
     )
 
 
@@ -119,5 +125,5 @@ async def deletar_chave_api(
 
     return BaseResponse(
         meta=MetaSchema(tempo_execucao=perf_counter() - inicio),
-        dados=montar_chave_api_response(chave_api),
+        dados=ChaveAPIResponse.model_validate(chave_api),
     )

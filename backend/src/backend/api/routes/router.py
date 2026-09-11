@@ -11,10 +11,7 @@ from .backoffice.conversa_routes import conversa_router
 def build_router() -> APIRouter:
     router = APIRouter()
 
-    router.include_router(
-        auth_router,
-        prefix='/auth'
-    )
+    router.include_router(auth_router, prefix='/auth')
     
     router.include_router(usuario_router)
     router.include_router(fontes_dados_router)
@@ -22,21 +19,6 @@ def build_router() -> APIRouter:
     router.include_router(pesquisa_router)
 
     router.include_router(conversa_router)
-    router.include_router(
-        usuario_router,
-        prefix=''
-    )
-    router.include_router(
-        chave_api_router,
-        prefix='/chave'
-    )
-    router.include_router(
-        indexacao_router,
-        prefix='/indexar'
-    )
-    router.include_router(
-        pesquisa_router,
-        prefix=''
-    )
+    router.include_router(chave_api_router, prefix='/chaves-api')
 
     return router

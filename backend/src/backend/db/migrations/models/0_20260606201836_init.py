@@ -14,15 +14,8 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     "data_criacao" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "data_atualizacao" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_usuario_email_73f3f5" ON "usuario" ("email");
-CREATE TABLE IF NOT EXISTS "chave_api" (
-    "id" SERIAL NOT NULL PRIMARY KEY,
-    "token" VARCHAR(255) NOT NULL,
-    "nome" VARCHAR(60) NOT NULL,
-    "descricao" VARCHAR(255),
-    "usuario_id" INT NOT NULL REFERENCES "usuario" ("id") ON DELETE CASCADE
-);
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_chave_api_token_6e8d92" ON "chave_api" ("token");"""
+CREATE UNIQUE INDEX IF NOT EXISTS "uidx_usuario_email_73f3f5" ON "usuario" ("email");"""
+
 
 async def downgrade(db: BaseDBAsyncClient) -> str:
     return """
