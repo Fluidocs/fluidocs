@@ -2,7 +2,7 @@ from time import perf_counter
 
 from fastapi import APIRouter, Depends, Query, status
 
-from backend.api.dependencies.auth import obter_usuario_autenticado
+from backend.api.dependencies.chave_api import obter_usuario_por_chave_api
 from backend.api.dependencies.conversa import obter_servico_conversa
 from backend.api.models.usuario import Usuario
 from backend.api.schemas.backoffice.conversa_schemas import (
@@ -19,14 +19,14 @@ conversa_router = APIRouter(tags=['conversa'])
 
 
 @conversa_router.post(
-    '/conversas',
+    '/conversas/perguntar',
     status_code=status.HTTP_200_OK,
     response_model=BaseResponse[ResponderConversaResponse],
-    description='Pesquisa os documentos do usuario e responde com os trechos mais relevantes. Sem conversa_id, cria a conversa com a pergunta como titulo.',
+    description='Exige ao menos uma fonte de dados ativa do usuario e pesquisa somente nessas fontes para responder com os trechos mais relevantes. Sem conversa_id, cria a conversa com a pergunta como titulo.',
 )
 async def conversar(
     dados: ConversaRequest,
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico: ServicoConversa = Depends(obter_servico_conversa),
 ) -> BaseResponse[ResponderConversaResponse]:
     inicio = perf_counter()
@@ -37,12 +37,12 @@ async def conversar(
 
 
 @conversa_router.post(
-    '/conversas/nova', status_code=status.HTTP_201_CREATED,
+    '/conversas', status_code=status.HTTP_201_CREATED,
     response_model=BaseResponse[ConversaResumoResponse],
     description='Cria uma conversa sem titulo e sem mensagens.',
 )
 async def criar_conversa(
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico: ServicoConversa = Depends(obter_servico_conversa),
 ) -> BaseResponse[ConversaResumoResponse]:
     inicio = perf_counter()
@@ -57,7 +57,7 @@ async def criar_conversa(
 async def renomear_conversa(
     conversa_id: int,
     dados: AtualizarConversaRequest,
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico: ServicoConversa = Depends(obter_servico_conversa),
 ) -> BaseResponse[ConversaResumoResponse]:
     inicio = perf_counter()
@@ -71,7 +71,7 @@ async def renomear_conversa(
 @conversa_router.delete('/conversas/{conversa_id}', response_model=BaseResponse[ConversaResumoResponse])
 async def deletar_conversa(
     conversa_id: int,
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico: ServicoConversa = Depends(obter_servico_conversa),
 ) -> BaseResponse[ConversaResumoResponse]:
     inicio = perf_counter()
@@ -86,7 +86,7 @@ async def deletar_conversa(
 async def listar_conversas(
     pagina: int = Query(default=1, ge=1),
     por_pagina: int = Query(default=20, ge=1, le=100),
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico: ServicoConversa = Depends(obter_servico_conversa),
 ) -> BaseResponse[list[ConversaResumoResponse]]:
     inicio = perf_counter()
@@ -104,7 +104,7 @@ async def listar_conversas(
 @conversa_router.get('/conversas/{conversa_id}', response_model=BaseResponse[ConversaDetalheResponse])
 async def obter_conversa(
     conversa_id: int,
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico: ServicoConversa = Depends(obter_servico_conversa),
 ) -> BaseResponse[ConversaDetalheResponse]:
     inicio = perf_counter()

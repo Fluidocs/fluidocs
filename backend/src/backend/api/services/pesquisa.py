@@ -1,4 +1,5 @@
 from elasticsearch import AsyncElasticsearch, ConnectionError, ConnectionTimeout, NotFoundError, BadRequestError
+from fastapi import HTTPException
 
 from backend.config.configuracoes import config
 from ..schemas.backoffice.pesquisa_schemas import PesquisaRequest
@@ -30,6 +31,11 @@ class ServicoPesquisa:
         usuario_id: int,
         dados: PesquisaRequest
     ) -> ResultadoPesquisa:
+        if not dados.fonte_dados_ids:
+            fontes = await self._servico_fontes.listar_fontes(usuario_id)
+            if not fontes:
+                raise HTTPException(status_code=404, detail='Nenhuma fonte de dados ativa encontrada.')
+            dados = dados.model_copy(update={'fonte_dados_ids': [fonte.id for fonte in fontes]})
         await self._servico_fontes.validar_existencia(dados.fonte_dados_ids, usuario_id)
         nome_indice = gerar_nome_indice(usuario_id)
 

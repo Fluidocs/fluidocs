@@ -1,3 +1,5 @@
+from pathlib import PurePosixPath
+
 from fastapi import HTTPException
 from httpx import HTTPError
 from ollama import AsyncClient, ResponseError
@@ -59,12 +61,14 @@ class ServicoConversa:
     async def responder(
         self, usuario: Usuario, dados: ConversaRequest,
     ) -> ResponderConversaResponse:
+        if not dados.fonte_dados_ids:
+            raise HTTPException(status_code=422, detail='Informe ao menos uma fonte de dados para conversar.')
         conversa = None
         historico = []
         if dados.conversa_id is not None:
             conversa = await self.obter(dados.conversa_id, usuario.id)
             caracteres = 0
-            async for mensagem in Mensagem.filter(conversa_id=conversa.id).order_by('-id'):
+            async for mensagem in Mensagem.filter(conversa_id=conversa.id).order_by('-id').limit(20):
                 papel = 'user' if mensagem.papel == PapelMensagem.USUARIO else 'assistant'
                 caracteres += len(f'{papel}: {mensagem.conteudo}')
                 if caracteres > self._config.ollama_max_history_chars:
@@ -73,11 +77,12 @@ class ServicoConversa:
 
         pesquisa = await self._servico_pesquisa.pesquisar_async(
             usuario_id=usuario.id,
-            dados=PesquisaRequest(q=dados.pergunta, fonte_dados_ids=dados.fonte_dados_ids),
+            dados=PesquisaRequest(q=dados.pergunta, fonte_dados_ids=dados.fonte_dados_ids, tamanho=5),
         )
         trechos = [
             TrechoContexto(
                 id_trecho=trecho.id_trecho, fonte_dados_id=documento.fonte_dados_id,
+                documento_id=documento.documento_id,
                 nome_documento=documento.nome_documento,
                 pontuacao=trecho.pontuacao, conteudo=trecho.conteudo,
             )
@@ -130,19 +135,24 @@ class ServicoConversa:
                         detail='A conversa recebeu outra mensagem. Envie a pergunta novamente.',
                     )
 
-            mensagem_usuario = await Mensagem.create(
+            await Mensagem.create(
                 conversa_id=conversa_salva.id, papel=PapelMensagem.USUARIO,
                 conteudo=dados.pergunta, using_db=conexao,
             )
-            for anexo in dados.anexos:
-                await Anexo.create(
-                    mensagem_id=mensagem_usuario.id, nome=anexo.nome,
-                    extensao=anexo.extensao, using_db=conexao,
-                )
-            await Mensagem.create(
+            mensagem_assistente = await Mensagem.create(
                 conversa_id=conversa_salva.id, papel=PapelMensagem.ASSISTENTE,
                 conteudo=resposta.resposta, using_db=conexao,
             )
+            anexos = []
+            for trecho in resposta.trechos_anexos:
+                nome = trecho.nome_documento or 'Documento.txt'
+                extensao = PurePosixPath(nome).suffix.lstrip('.').lower()
+                anexo = await Anexo.create(
+                    mensagem_id=mensagem_assistente.id, nome=nome[:255],
+                    extensao=extensao[:4] or 'txt',
+                    using_db=conexao,
+                )
+                anexos.append(AnexoResponse.model_validate(anexo))
             conversa_salva.data_ultima_interacao = timezone.now()
             campos_atualizados = ['data_ultima_interacao']
             if not conversa_salva.titulo:
@@ -153,7 +163,7 @@ class ServicoConversa:
             )
 
         return ResponderConversaResponse(
-            conversa_id=conversa_salva.id, resposta=resposta.resposta,
+            conversa_id=conversa_salva.id, resposta=resposta.resposta, anexos=anexos,
         )
 
     async def listar(

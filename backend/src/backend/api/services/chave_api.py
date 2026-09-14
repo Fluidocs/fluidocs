@@ -15,6 +15,18 @@ class ServicoChaveAPI:
     ) -> None:
         self.gerador_chave_api = gerador_chave_api
 
+    async def autenticar(self, token: str) -> Usuario:
+        chave = await ChaveAPI.get_or_none(
+            token=self.gerador_chave_api.gerar_hash_token(token),
+        ).select_related('usuario')
+        if chave is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Chave de API invalida.',
+                headers={'WWW-Authenticate': 'APIKey'},
+            )
+        return chave.usuario
+
     async def criar(
         self,
         usuario: Usuario,
