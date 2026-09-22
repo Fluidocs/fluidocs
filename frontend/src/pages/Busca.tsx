@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUp,
+  CalendarDays,
   Database,
   FileSearch,
+  FileText,
   LayoutGrid,
   LogOut,
   MessageSquare,
@@ -14,11 +16,12 @@ import {
 import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
 import { identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
 import { pesquisarExemplos, validarFontes, validarPergunta, type DocumentoDemo } from '../services/consumoDemo';
-import { EvidenciaDocumento } from '../components/consumo/EvidenciaDocumento';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
 import logo from '../assets/prisma-norte-logo.svg';
 import '../components/chat/Chat.css';
+
+const formatarData = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' });
 
 function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
   aberto: boolean;
@@ -179,13 +182,21 @@ export function Busca() {
           </div>
 
           {pesquisa.resultados.length ? <div className="busca-lista">
-            {pesquisa.resultados.map((documento, indice) => <article className="busca-resultado" key={documento.id}>
-              <span className="busca-resultado-ordem" aria-hidden="true">{String(indice + 1).padStart(2, '0')}</span>
-              <div className="busca-resultado-conteudo">
-                <h2>{documento.titulo}</h2>
-                <p>{documento.trecho.length > 220 ? `${documento.trecho.slice(0, 220)}…` : documento.trecho}</p>
-                <EvidenciaDocumento documento={documento} />
+            {pesquisa.resultados.map(documento => <article className="busca-resultado" key={documento.id}>
+              <div className="busca-resultado-topo">
+                <span className="busca-resultado-icone" aria-hidden="true"><FileText size={21} strokeWidth={1.7} /></span>
+                <div className="busca-resultado-identidade">
+                  <h2>{documento.nome}</h2>
+                  <p>{documento.titulo}</p>
+                </div>
+                <span className="busca-resultado-tipo">{documento.tipo}</span>
               </div>
+              <blockquote className="busca-resultado-trecho">{documento.trecho.length > 260 ? `${documento.trecho.slice(0, 260)}…` : documento.trecho}</blockquote>
+              <footer className="busca-resultado-meta">
+                <span><CalendarDays size={14} aria-hidden="true" />Indexado em <time dateTime={documento.indexadoEm}>{formatarData.format(new Date(documento.indexadoEm))}</time></span>
+                <span><Database size={14} aria-hidden="true" />{documento.fonteNome}</span>
+                <span>Texto de exemplo</span>
+              </footer>
             </article>)}
           </div> : <div className="busca-sem-resultados">
             <FileSearch size={30} strokeWidth={1.5} aria-hidden="true" />

@@ -231,23 +231,19 @@
 .busca-resultados-cabecalho p { margin-top: 10px; color: var(--chat-muted); font-size: 12px; line-height: 1.7; }
 .busca-nova-consulta { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 38px; padding: 8px 12px; border: 1px solid var(--chat-line); border-radius: 8px; color: var(--chat-muted); font-size: 11px; }
 .busca-nova-consulta:hover { background: var(--chat-sidebar); color: var(--chat-ink); }
-.busca-lista { counter-reset: resultado; }
-.busca-resultado { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 18px; padding: 28px 0 30px; }
-.busca-resultado + .busca-resultado { border-top: 1px solid var(--chat-line); }
-.busca-resultado-ordem { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; background: var(--chat-tint); color: var(--chat-accent); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.busca-resultado-conteudo { min-width: 0; }
-.busca-app .busca-resultado h2 { font-size: 16px; line-height: 1.45; letter-spacing: -.015em; }
-.busca-resultado-conteudo > p { max-width: 72ch; margin: 9px 0 17px; color: var(--chat-muted); font-size: 13px; line-height: 1.85; }
-.busca-app .consumo-evidencia { border-color: var(--chat-line); border-radius: 9px; background: transparent; }
-.busca-app .consumo-evidencia summary { padding: 11px 12px; color: var(--chat-muted); font-size: 11px; }
-.busca-app .consumo-evidencia summary:hover { background: var(--chat-sidebar); }
-.busca-app .consumo-evidencia summary > svg { color: var(--chat-accent); }
-.busca-app .consumo-evidencia small { color: var(--chat-muted); font-size: 10px; }
-.busca-app .consumo-evidencia-acao { color: var(--chat-accent); font-size: 11px; }
-.busca-app .consumo-trecho { border-color: var(--chat-line); padding: 16px; }
-.busca-app .consumo-trecho h4 { font-size: 12px; }
-.busca-app .consumo-trecho blockquote { color: var(--chat-ink); font-size: 12px; line-height: 1.85; }
-.busca-app .consumo-trecho > p { color: var(--chat-muted); font-size: 10px; }
+.busca-lista { display: grid; gap: 14px; padding-top: 22px; }
+.busca-resultado { min-width: 0; padding: 20px; border: 1px solid var(--chat-line); border-radius: 14px; background: var(--chat-bg); }
+.busca-resultado-topo { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.busca-resultado-icone { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: var(--chat-tint); color: var(--chat-accent); }
+.busca-resultado-identidade { min-width: 0; }
+.busca-app .busca-resultado h2 { font-size: 15px; line-height: 1.45; letter-spacing: -.015em; overflow-wrap: anywhere; }
+.busca-resultado-identidade p { margin-top: 3px; color: var(--chat-muted); font-size: 11px; line-height: 1.5; }
+.busca-resultado-tipo { align-self: start; padding: 5px 7px; border-radius: 6px; background: var(--chat-sidebar); color: var(--chat-muted); font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+.busca-resultado-trecho { max-width: 72ch; margin: 18px 0; padding: 0; border: 0; color: var(--chat-ink); font-size: 13px; line-height: 1.85; }
+.busca-resultado-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 18px; padding-top: 14px; border-top: 1px solid var(--chat-line); color: var(--chat-muted); font-size: 10px; line-height: 1.5; }
+.busca-resultado-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.busca-resultado-meta svg { color: var(--chat-accent); }
+.busca-resultado-meta time { font-variant-numeric: tabular-nums; }
 .busca-sem-resultados { padding: 56px 0; text-align: center; }
 .busca-sem-resultados > svg { margin: 0 auto 18px; color: var(--chat-muted); }
 .busca-app .busca-sem-resultados h2 { font-size: 20px; }
@@ -270,9 +266,11 @@
   .busca-resultados-cabecalho { display: block; }
   .busca-app .busca-resultados-cabecalho h1 { font-size: 21px; }
   .busca-nova-consulta { margin-top: 16px; }
-  .busca-resultado { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 24px 0 26px; }
-  .busca-resultado-ordem { width: 26px; height: 26px; }
-  .busca-app .consumo-evidencia-acao { display: none; }
+  .busca-lista { gap: 12px; }
+  .busca-resultado { padding: 16px; }
+  .busca-resultado-topo { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; }
+  .busca-resultado-icone { width: 38px; height: 38px; }
+  .busca-resultado-trecho { margin-block: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
