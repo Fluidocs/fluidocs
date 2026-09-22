@@ -12,7 +12,13 @@ interface Registro {
   atualizadoEm: string;
 }
 
-export interface FonteDados extends Registro { descricao: string }
+export interface DocumentoIndexado {
+  id: string;
+  nome: string;
+  extensao: string;
+  indexadoEm: string;
+}
+export interface FonteDados extends Registro { descricao: string; documentos: DocumentoIndexado[] }
 export interface ChaveApi extends Registro { final: string }
 interface DadosLocais { fontes: FonteDados[]; chaves: ChaveApi[] }
 export interface ArmazenamentoLocal {
@@ -24,13 +30,14 @@ interface EstadoGerenciamento extends DadosLocais {
   erroLeitura: string;
   carregar: () => void;
   salvarFonte: (conta: string, dados: { nome: string; descricao: string }, id?: string) => FonteDados;
+  registrarDocumentos: (conta: string, fonteId: string, nomes: string[]) => DocumentoIndexado[];
   excluirFonte: (conta: string, id: string) => void;
   criarChave: (conta: string, nome: string) => { registro: ChaveApi; valor: string };
   renomearChave: (conta: string, id: string, nome: string) => void;
   excluirChave: (conta: string, id: string) => void;
 }
 
-// O login de demonstração reutiliza o mesmo ID: o e-mail distingue as contas locais.
+// O acesso simulado reutiliza o mesmo ID: o e-mail distingue as contas locais.
 // Esta separação de interface não substitui autorização no backend.
 export function identificarConta(usuario: Pick<Usuario, 'id' | 'email'>) {
   return JSON.stringify([usuario.id, usuario.email.trim().toLocaleLowerCase('pt-BR')]);
@@ -60,16 +67,28 @@ function registroValido(valor: unknown): valor is Registro {
     && Number.isFinite(Date.parse(r.criadoEm as string)) && Number.isFinite(Date.parse(r.atualizadoEm as string));
 }
 
+function documentoValido(valor: unknown): valor is DocumentoIndexado {
+  if (!valor || typeof valor !== 'object') return false;
+  const documento = valor as Record<string, unknown>;
+  return typeof documento.id === 'string'
+    && typeof documento.nome === 'string'
+    && typeof documento.extensao === 'string'
+    && typeof documento.indexadoEm === 'string'
+    && Number.isFinite(Date.parse(documento.indexadoEm));
+}
+
 function lerDados(storage: ArmazenamentoLocal): DadosLocais {
   const texto = storage.getItem(CHAVE_GERENCIAMENTO);
   if (!texto) return { fontes: [], chaves: [] };
   const dados = JSON.parse(texto);
   if (!dados || !Array.isArray(dados.fontes) || !Array.isArray(dados.chaves)
-    || !dados.fontes.every((r: unknown) => registroValido(r) && typeof (r as FonteDados).descricao === 'string')
+    || !dados.fontes.every((r: unknown) => registroValido(r)
+      && typeof (r as FonteDados).descricao === 'string'
+      && (!('documentos' in (r as object)) || (Array.isArray((r as FonteDados).documentos) && (r as FonteDados).documentos.every(documentoValido))))
     || !dados.chaves.every((r: unknown) => registroValido(r) && typeof (r as ChaveApi).final === 'string')) {
     throw new Error('Dados locais inválidos.');
   }
-  return dados;
+  return { ...dados, fontes: dados.fontes.map((fonte: FonteDados) => ({ ...fonte, documentos: fonte.documentos ?? [] })) };
 }
 
 export function criarStoreGerenciamento(obterStorage: () => ArmazenamentoLocal) {
@@ -94,9 +113,24 @@ export function criarStoreGerenciamento(obterStorage: () => ArmazenamentoLocal) 
         if (descricao.length > 240) throw new Error('Use uma descrição com até 240 caracteres.');
         const anterior = id ? encontrar(fontes, conta, id) : undefined;
         const agora = new Date().toISOString();
-        const registro: FonteDados = { id: anterior?.id ?? crypto.randomUUID(), conta, nome, descricao, criadoEm: anterior?.criadoEm ?? agora, atualizadoEm: agora };
+        const registro: FonteDados = { id: anterior?.id ?? crypto.randomUUID(), conta, nome, descricao, documentos: anterior?.documentos ?? [], criadoEm: anterior?.criadoEm ?? agora, atualizadoEm: agora };
         persistir({ fontes: anterior ? fontes.map(r => r.id === id && r.conta === conta ? registro : r) : [registro, ...fontes], chaves });
         return registro;
+      },
+      registrarDocumentos: (conta, fonteId, nomes) => {
+        const { fontes, chaves } = get();
+        const fonte = encontrar(fontes, conta, fonteId);
+        const agora = new Date().toISOString();
+        const existentes = new Set(fonte.documentos.map(documento => documento.nome.toLocaleLowerCase('pt-BR')));
+        const documentos = nomes.map(nome => {
+          const limpo = nome.trim();
+          const extensao = limpo.includes('.') ? limpo.split('.').pop()?.toLocaleLowerCase('pt-BR') ?? '' : '';
+          return { id: crypto.randomUUID(), nome: limpo, extensao, indexadoEm: agora };
+        }).filter(documento => documento.nome && !existentes.has(documento.nome.toLocaleLowerCase('pt-BR')));
+        if (!documentos.length) throw new Error('Todos os arquivos selecionados já aparecem nesta fonte.');
+        const atualizada = { ...fonte, documentos: [...documentos, ...fonte.documentos], atualizadoEm: agora };
+        persistir({ fontes: fontes.map(item => item.id === fonteId && item.conta === conta ? atualizada : item), chaves });
+        return documentos;
       },
       excluirFonte: (conta, id) => {
         const { fontes, chaves } = get();
@@ -107,7 +141,7 @@ export function criarStoreGerenciamento(obterStorage: () => ArmazenamentoLocal) 
         const { fontes, chaves } = get();
         const nome = validarNome(entrada, chaves, conta);
         const bytes = crypto.getRandomValues(new Uint8Array(24));
-        // Prefixo inequívoco de demonstração: não representa credencial real.
+        // Prefixo inequívoco de valor fictício: não representa credencial real.
         const valor = `fd_demo_${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`;
         const agora = new Date().toISOString();
         const registro: ChaveApi = { id: crypto.randomUUID(), conta, nome, final: valor.slice(-4), criadoEm: agora, atualizadoEm: agora };

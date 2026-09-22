@@ -19,6 +19,16 @@
   --g-danger: #ffa5a8;
   --g-danger-bg: #44262d;
 }
+.chat-route.prisma-norte {
+  --chat-line: #dde6e4;
+  --chat-hover: #e9f0ee;
+  --chat-accent: #0f766e;
+  --chat-tint: #e3f3f0;
+}
+.dark .chat-route.prisma-norte {
+  --chat-accent: #5eead4;
+  --chat-tint: #173b3a;
+}
 .chat-app { display: grid; grid-template-columns: minmax(0, 1fr); height: 100dvh; min-height: 420px; font-size: 14px; background: var(--chat-bg); }
 .chat-app.chat-com-sidebar { grid-template-columns: 272px minmax(0, 1fr); }
 .chat-route .chat-app :is(button, a, summary, input, textarea):focus-visible { outline: 2px solid var(--chat-accent); outline-offset: 3px; }
@@ -41,6 +51,8 @@
 .chat-nova { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 10px; font-weight: 700; color: var(--chat-accent); background: var(--chat-tint); min-height: 44px; }
 .chat-nova:hover { box-shadow: inset 0 0 0 1px var(--chat-accent); }
 .chat-nav { margin: 8px 0 28px; }
+.chat-nav-conversas { display: grid; gap: 4px; margin-bottom: 8px; }
+.chat-nav-conversas + .chat-nova { margin-bottom: 28px; }
 .chat-nav a, .chat-sidebar-base > a { display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-height: 42px; border-radius: 8px; font-size: 13px; }
 .chat-nav a:hover, .chat-sidebar-base > a:hover { background: var(--chat-hover); }
 .chat-busca { display: flex; align-items: center; gap: 8px; color: var(--chat-muted); padding: 8px 12px; border: 1px solid var(--chat-line); border-radius: 8px; min-height: 36px; }

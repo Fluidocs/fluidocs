@@ -26,7 +26,7 @@ describe('gerenciamento local por conta', () => {
     expect(store.getState().fontes).toEqual([]);
   });
 
-  it('separa contas de demonstração que compartilham ID e bloqueia mutações de outra conta', () => {
+  it('separa contas simuladas que compartilham ID e bloqueia mutações de outra conta', () => {
     const store = criarStoreGerenciamento(() => storage);
     const a = store.getState().salvarFonte(contaA, { nome: 'RH', descricao: '' });
     store.getState().salvarFonte(contaB, { nome: 'RH', descricao: '' });
@@ -48,7 +48,7 @@ describe('gerenciamento local por conta', () => {
     expect(store.getState().fontes).toHaveLength(1);
   });
 
-  it('gera chaves distintas de demonstração e persiste somente metadados, nunca o valor completo', () => {
+  it('gera chaves fictícias distintas e persiste somente metadados, nunca o valor completo', () => {
     const store = criarStoreGerenciamento(() => storage);
     const primeira = store.getState().criarChave(contaA, 'Portal');
     const segunda = store.getState().criarChave(contaA, 'Aplicativo');
@@ -62,6 +62,17 @@ describe('gerenciamento local por conta', () => {
     recarregado.getState().carregar();
     expect(recarregado.getState().chaves).toHaveLength(2);
     expect(recarregado.getState().chaves[0]).not.toHaveProperty('valor');
+  });
+
+  it('registra apenas os metadados dos documentos e evita nomes repetidos na mesma fonte', () => {
+    const store = criarStoreGerenciamento(() => storage);
+    const fonte = store.getState().salvarFonte(contaA, { nome: 'Contratos', descricao: '' });
+    const documentos = store.getState().registrarDocumentos(contaA, fonte.id, ['contrato.pdf', 'planilha.XLSX']);
+    expect(documentos).toHaveLength(2);
+    expect(documentos[1]).toMatchObject({ nome: 'planilha.XLSX', extensao: 'xlsx' });
+    expect(store.getState().fontes[0].documentos).toEqual(documentos);
+    expect(JSON.stringify(store.getState())).not.toContain('conteudo');
+    expect(() => store.getState().registrarDocumentos(contaA, fonte.id, ['CONTRATO.PDF'])).toThrow('já aparecem');
   });
 
   it('renomeia sem alterar a identificação e exclui apenas a chave selecionada da conta', () => {

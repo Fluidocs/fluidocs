@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Database, KeyRound, LayoutGrid, LogOut, Monitor, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Database, KeyRound, LayoutGrid, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { AlternarTema } from './AlternarTema';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { CHAVE_GERENCIAMENTO, identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
@@ -65,7 +65,6 @@ export function LayoutGerenciamento() {
       <NavLink to="/fontes-de-dados" onClick={() => mobile && fecharNavegacao()}><Database size={17} aria-hidden="true" />Fontes de dados</NavLink>
       <NavLink to="/chaves-api" onClick={() => mobile && fecharNavegacao()}><KeyRound size={17} aria-hidden="true" />Chaves de API</NavLink>
     </nav>
-    <div className="gestao-sidebar-contexto"><Monitor size={20} aria-hidden="true" /><div><strong>Demonstração local</strong><p>Cadastros salvos neste navegador e separados por conta.</p></div></div>
     <div className="chat-sidebar-base">
       <Link to="/hub"><LayoutGrid size={17} aria-hidden="true" />Trocar módulo</Link>
       <div className="chat-conta">

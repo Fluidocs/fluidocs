@@ -53,7 +53,7 @@ export function Hub() {
             <span className="hub-module-action">Acessar busca e conversas<ArrowRight size={20} aria-hidden="true" /></span>
           </Link>
 
-          <Link className="hub-module" to="/fontes-de-dados" aria-labelledby="hub-gerenciamento-title" aria-describedby="hub-gerenciamento-description hub-keys-note">
+          <Link className="hub-module" to="/fontes-de-dados" aria-labelledby="hub-gerenciamento-title" aria-describedby="hub-gerenciamento-description">
             <div className="hub-module-heading">
               <SlidersHorizontal size={30} strokeWidth={1.6} aria-hidden="true" />
               <h2 id="hub-gerenciamento-title">Gerenciamento</h2>
@@ -70,10 +70,6 @@ export function Hub() {
         <p className="hub-switch-hint">Sua conta acessa os dois módulos. Use <strong>Trocar módulo</strong> no menu para voltar aqui.</p>
       </main>
 
-      <footer className="hub-footer">
-        <span>Ambiente de demonstração · acesso simulado</span>
-        <span id="hub-keys-note">Dados, buscas e respostas de demonstração, sem conexão à API.</span>
-      </footer>
     </div>
   );
 }

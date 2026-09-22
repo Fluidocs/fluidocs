@@ -84,7 +84,7 @@ export function Conversas() {
         <div className="chat-header-inicio">
           <button ref={historicoBotao} className="chat-icon" aria-label={historicoAberto ? 'Recolher histórico' : 'Abrir histórico'} aria-expanded={historicoAberto} aria-controls="chat-sidebar" onClick={() => setHistoricoAberto(!historicoAberto)}><PanelLeftOpen size={20} /></button>
           {!historicoAberto && <button className="chat-icon" aria-label="Nova conversa" title="Nova conversa" onClick={nova}><SquarePen size={20} /></button>}
-          <span className="chat-header-nome">Fluidocs<span>Conversas</span></span>
+          <span className="chat-header-nome">Prisma Norte<span>Conversas</span></span>
         </div>
         {ativa && <>
           <span className="chat-header-titulo" title={ativa.titulo}>{ativa.titulo}</span>
@@ -103,7 +103,7 @@ export function Conversas() {
           {fonteIndisponivel && <p className="chat-alerta" role="alert">Uma fonte foi excluída. Inicie outra conversa para selecionar novas fontes.</p>}
           {erro && !editando && <p className="chat-alerta" role="alert">{erro}</p>}
           <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={ativa?.fontes} desabilitarFontes={!!erroFontes || !!erroLeitura} />
-          {!ativa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Como funciona a indexação?', 'Como organizar minhas fontes?', 'De onde vêm as respostas?'].map(pergunta => <button key={pergunta} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
+          {!ativa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
           <p className="chat-rodape">{ativa ? 'Confira as fontes. Respostas podem conter imprecisões.' : 'Selecione suas fontes de dados para começar.'}</p>
         </div>
       </div>}

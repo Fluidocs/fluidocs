@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, FileText, Search, ArrowUpRight, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, FileText, Search, ArrowUpRight } from 'lucide-react';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { useDadosStore } from '../store/useDadosStore';
 import { AlternarTema } from '../components/AlternarTema';
@@ -23,14 +23,13 @@ export function Login() {
   const [showHelp, setShowHelp] = useState(false);
   const [example, setExample] = useState(0);
 
-  function accessDemo(address: string) {
-    // Preserve the existing local demo session and destination selection.
+  function accessExample(address: string) {
     entrar({ id: '1', nome: 'João Silva', email: address, funcao: 'admin', gruposAcesso: ['admin', 'rh', 'ti', 'geral'] });
     navigate(repositorios.length > 0 ? '/busca' : '/repositorios');
   }
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    accessDemo(email);
+    accessExample(email);
   }
 
   return (
@@ -49,14 +48,13 @@ export function Login() {
               <div className="login-field">
                 <div className="login-label-row"><label htmlFor="login-password">Senha</label><button type="button" className="login-text-button" aria-expanded={showHelp} aria-controls="login-recovery" onClick={() => setShowHelp(!showHelp)}>Esqueceu a senha?</button></div>
                 <div className="login-password"><input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Digite sua senha" required value={password} onChange={(event) => setPassword(event.target.value)} /><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
-                {showHelp && <p id="login-recovery" className="login-help" role="status">A recuperação de senha ainda não está disponível. Explore a demonstração pelo botão abaixo, sem usar uma senha real.</p>}
+                {showHelp && <p id="login-recovery" className="login-help" role="status">A recuperação de senha ainda não está disponível. Continue sem senha pelo botão abaixo.</p>}
               </div>
               <button type="submit" className="login-submit">Entrar no Fluidocs <ArrowRight size={19} aria-hidden="true" /></button>
             </form>
             <div className="login-divider"><span>ou conheça primeiro</span></div>
-            <button type="button" className="login-demo" onClick={() => accessDemo('demo@example.com')}>Explorar demonstração <ArrowUpRight size={18} aria-hidden="true" /></button>
+            <button type="button" className="login-demo" onClick={() => accessExample('demo@example.com')}>Continuar sem senha <ArrowUpRight size={18} aria-hidden="true" /></button>
             <p className="login-signup">Primeira vez aqui? <Link to="/cadastrar">Criar uma conta</Link></p>
-            <div className="login-notice"><Info size={16} aria-hidden="true" /><p>Ambiente de demonstração. O acesso é simulado; use apenas dados fictícios.</p></div>
           </div>
         </section>
         <aside className="login-story" aria-label="Conheça o Fluidocs">

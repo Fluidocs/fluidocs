@@ -4,7 +4,7 @@ import { LayoutGrid, LogOut, MessageSquare, PanelLeftClose, Search, SquarePen } 
 import type { ConversaConsumo } from '../../store/useConsumoStore';
 import type { Usuario } from '../../store/useAutenticacaoStore';
 import { AlternarTema } from '../AlternarTema';
-import logo from '../../assets/fluidocs-logo.png';
+import logo from '../../assets/prisma-norte-logo.svg';
 
 interface Props {
   aberto: boolean; mobile: boolean; conversas: ConversaConsumo[]; ativaId: string | null; usuario: Usuario;
@@ -27,9 +27,9 @@ export function BarraLateralChat({ aberto, mobile, conversas, ativaId, usuario, 
     { titulo: 'Anteriores', itens: filtradas.filter(c => Date.parse(c.atualizadoEm) < +semana) },
   ];
   const conteudo = <>
-    <div className="chat-sidebar-topo"><Link to="/hub" className="chat-brand" aria-label="Fluidocs — escolher módulo"><img src={logo} alt="" /><span>fluidocs<span>.</span></span></Link><button className="chat-icon" aria-label="Recolher histórico" onClick={aoFechar}><PanelLeftClose size={19} /></button></div>
+    <div className="chat-sidebar-topo"><Link to="/hub" className="chat-brand" aria-label="Prisma Norte — escolher módulo"><img src={logo} alt="" /><span>Prisma Norte</span></Link><button className="chat-icon" aria-label="Recolher histórico" onClick={aoFechar}><PanelLeftClose size={19} /></button></div>
+    <nav className="chat-nav chat-nav-conversas" aria-label="Busca e conversas"><Link to="/busca"><Search size={17} />Buscar documentos</Link><Link to="/conversas" className="selecionada" aria-current="page"><MessageSquare size={17} />Conversas</Link></nav>
     <button className="chat-nova" onClick={aoCriar}><SquarePen size={18} />Nova conversa</button>
-    <nav className="chat-nav" aria-label="Navegação"><Link to="/busca"><Search size={17} />Buscar documentos</Link></nav>
     <div className="chat-busca"><Search size={15} aria-hidden="true" /><input type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar conversa" aria-label="Buscar conversas" /></div>
     <div className="chat-historico">
       {grupos.map(grupo => grupo.itens.length > 0 && <section key={grupo.titulo} aria-label={grupo.titulo}><h2>{grupo.titulo}</h2><ul>{grupo.itens.map(c => <li key={c.id}><button className={ativaId === c.id ? 'selecionada' : ''} aria-current={ativaId === c.id ? 'page' : undefined} title={c.titulo} onClick={() => aoSelecionar(c.id)}><MessageSquare size={15} aria-hidden="true" /><span>{c.titulo}</span></button></li>)}</ul></section>)}

@@ -17,7 +17,7 @@ import { pesquisarExemplos, validarFontes, validarPergunta, type DocumentoDemo }
 import { EvidenciaDocumento } from '../components/consumo/EvidenciaDocumento';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
-import logo from '../assets/fluidocs-logo.png';
+import logo from '../assets/prisma-norte-logo.svg';
 import '../components/chat/Chat.css';
 
 function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
@@ -38,9 +38,9 @@ function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
 
   const conteudo = <>
     <div className="chat-sidebar-topo">
-      <Link to="/hub" className="chat-brand" aria-label="Fluidocs — escolher módulo">
+      <Link to="/hub" className="chat-brand" aria-label="Prisma Norte — escolher módulo">
         <img src={logo} alt="" />
-        <span>fluidocs<span>.</span></span>
+        <span>Prisma Norte</span>
       </Link>
       <button className="chat-icon" aria-label="Recolher navegação" onClick={aoFechar}><PanelLeftClose size={19} /></button>
     </div>
@@ -57,7 +57,7 @@ function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
     </div>
     <div className="busca-sidebar-nota">
       <span>Demonstração local</span>
-      <p>Os resultados usam textos fictícios sobre o Fluidocs. Nenhum arquivo real é consultado.</p>
+      <p>Os resultados simulam documentos internos da Prisma Norte. Nenhum arquivo real é consultado.</p>
     </div>
     <div className="chat-sidebar-base">
       <Link to="/hub"><LayoutGrid size={17} />Trocar módulo</Link>
@@ -139,7 +139,7 @@ export function Busca() {
       <header className="chat-header busca-header">
         <div className="chat-header-inicio">
           <button ref={navegacaoBotao} className="chat-icon" aria-label={navegacaoAberta ? 'Recolher navegação' : 'Abrir navegação'} aria-expanded={navegacaoAberta} aria-controls="busca-sidebar" onClick={() => setNavegacaoAberta(!navegacaoAberta)}><PanelLeftOpen size={20} /></button>
-          <span className="chat-header-nome">Fluidocs<span>Busca</span></span>
+          <span className="chat-header-nome">Prisma Norte<span>Busca</span></span>
         </div>
         {pesquisa && <span className="busca-header-meta" role="status">{pesquisa.resultados.length} documento{pesquisa.resultados.length === 1 ? '' : 's'} encontrado{pesquisa.resultados.length === 1 ? '' : 's'}</span>}
       </header>
@@ -164,7 +164,7 @@ export function Busca() {
           </form>
           {erro && <p role="alert" className="chat-alerta">{erro}</p>}
           {!pesquisa && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
-            {['Indexação de documentos', 'Organizar fontes de dados', 'Origem das respostas'].map(exemplo => <button key={exemplo} onClick={() => definirExemplo(exemplo)}>{exemplo}</button>)}
+            {['Benefícios para novos talentos', 'Padrões de revisão de código', 'Como publicar uma nova versão'].map(exemplo => <button key={exemplo} onClick={() => definirExemplo(exemplo)}>{exemplo}</button>)}
           </div>}
           <p className="chat-rodape">Os resultados desta demonstração são fictícios e ficam limitados às fontes selecionadas.</p>
         </div>
@@ -190,7 +190,7 @@ export function Busca() {
           </div> : <div className="busca-sem-resultados">
             <FileSearch size={30} strokeWidth={1.5} aria-hidden="true" />
             <h2>Nenhum documento encontrado</h2>
-            <p>Tente pesquisar sobre fontes de dados, indexação ou evidências, ou ajuste as fontes selecionadas.</p>
+            <p>Tente pesquisar sobre onboarding, benefícios, desenvolvimento ou deploy, ou ajuste as fontes selecionadas.</p>
             <button className="chat-primary" onClick={() => { setPesquisa(null); requestAnimationFrame(() => campo.current?.focus()); }}>Editar consulta</button>
           </div>}
         </section>}

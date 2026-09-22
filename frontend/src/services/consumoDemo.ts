@@ -31,9 +31,12 @@ export function validarPergunta(entrada: string) {
 // A demonstração faz correspondência textual, não executa Elasticsearch ou um LLM.
 export function documentosDeExemplo(fontes: FonteConsulta[]): DocumentoDemo[] {
   return fontes.flatMap(fonte => [
-    { id: `${fonte.id}:organizacao`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'organizacao-de-fontes.exemplo.txt', titulo: 'Organizar informações por fonte', trecho: `Neste exemplo, a fonte “${fonte.nome}” reúne documentos de um mesmo assunto. Um nome claro e uma descrição ajudam a identificar o conteúdo. A seleção de fontes delimita quais informações serão consultadas na pesquisa ou na conversa.` },
-    { id: `${fonte.id}:indexacao`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'guia-de-indexacao.exemplo.txt', titulo: 'Como funciona a indexação', trecho: 'A indexação prepara os documentos para consulta: extrai o texto, divide o conteúdo em trechos e organiza as informações para recuperação. No fluxo previsto do Fluidocs, esse processamento acontece em segundo plano.' },
-    { id: `${fonte.id}:evidencias`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'respostas-e-evidencias.exemplo.txt', titulo: 'Entender a origem das respostas', trecho: 'Uma resposta fundamentada usa trechos recuperados das fontes selecionadas. Os arquivos apresentados junto à resposta identificam as evidências utilizadas. As fontes ficam fixas após o início da conversa; para consultar outro conjunto, crie uma nova conversa.' },
+    { id: `${fonte.id}:onboarding`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'guia-onboarding-2026.exemplo.pdf', titulo: 'Primeiros dias na Prisma Norte', trecho: 'O onboarding começa com a apresentação da equipe e a configuração dos acessos. Na primeira semana, cada novo talento recebe uma pessoa madrinha, conhece os rituais do time e combina com a liderança um plano de integração para os primeiros 30 dias.' },
+    { id: `${fonte.id}:beneficios`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'politica-de-beneficios.exemplo.pdf', titulo: 'Benefícios e bem-estar', trecho: 'A Prisma Norte oferece auxílio para trabalho remoto, horário flexível, apoio à saúde e uma verba anual de desenvolvimento. Solicitações de cursos e livros devem indicar a relação do conteúdo com o plano de desenvolvimento individual.' },
+    { id: `${fonte.id}:feedback`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'rituais-de-pessoas.exemplo.docx', titulo: 'Conversas de desenvolvimento', trecho: 'As conversas individuais acontecem quinzenalmente. A pauta pode incluir prioridades, impedimentos, bem-estar e evolução profissional. A cada trimestre, liderança e pessoa colaboradora revisam objetivos e registram os próximos passos do plano de desenvolvimento.' },
+    { id: `${fonte.id}:frontend`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'padroes-frontend.exemplo.md', titulo: 'Padrões para desenvolvimento frontend', trecho: 'Novas interfaces devem usar componentes compartilhados, estados explícitos de carregamento e erro, navegação por teclado e testes para os fluxos críticos. A revisão de código verifica legibilidade, acessibilidade e aderência aos contratos da API.' },
+    { id: `${fonte.id}:revisao`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'guia-revisao-de-codigo.exemplo.md', titulo: 'Revisão de código', trecho: 'Toda mudança deve ser pequena o suficiente para revisão objetiva. A descrição informa contexto, risco e evidências de teste. Pelo menos uma aprovação é necessária antes da integração, e comentários bloqueantes devem ser resolvidos ou discutidos com quem revisou.' },
+    { id: `${fonte.id}:deploy`, fonteId: fonte.id, fonteNome: fonte.nome, nome: 'runbook-deploy.exemplo.md', titulo: 'Publicação de uma nova versão', trecho: 'Antes do deploy, confirme os testes automatizados, registre mudanças de banco e prepare o plano de reversão. A publicação começa no ambiente de homologação; depois da validação, a versão segue para produção com monitoramento de erros e métricas essenciais.' },
   ]);
 }
 
@@ -62,7 +65,7 @@ export function responderExemplo(pergunta: string, fontes: FonteConsulta[]) {
   return {
     conteudo: evidencias.length
       ? `Encontrei as seguintes informações:\n\n${evidencias.map((d, i) => `[${i + 1}] ${d.trecho}`).join('\n\n')}`
-      : 'Não encontrei informações suficientes para responder a esta pergunta. Tente perguntar sobre organização de fontes, indexação ou origem das respostas.',
+      : 'Não encontrei informações suficientes para responder a esta pergunta. Tente perguntar sobre onboarding, benefícios, feedback, revisão de código ou deploy.',
     evidencias,
   };
 }

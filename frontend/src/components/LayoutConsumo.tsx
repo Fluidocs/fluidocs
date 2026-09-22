@@ -5,7 +5,7 @@ import { AlternarTema } from './AlternarTema';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { CHAVE_GERENCIAMENTO, identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
 import { CHAVE_CONSUMO, useConsumoStore } from '../store/useConsumoStore';
-import logo from '../assets/fluidocs-logo.png';
+import logo from '../assets/prisma-norte-logo.svg';
 import './gerenciamento/Gerenciamento.css';
 import './consumo/Consumo.css';
 
@@ -28,17 +28,17 @@ export function LayoutConsumo() {
   }, [estaAutenticado, carregarFontes, carregarConversas]);
   useEffect(() => {
     const anterior = document.title;
-    document.title = `${pathname === '/busca' ? 'Busca de documentos' : 'Conversas'} · Fluidocs`;
+    document.title = `${pathname === '/busca' ? 'Busca de documentos' : 'Conversas'} · Prisma Norte`;
     window.scrollTo(0, 0);
     return () => { document.title = anterior; };
   }, [pathname]);
   if (!estaAutenticado || !usuario) return <Navigate to="/entrar" replace />;
-  if (pathname === '/conversas' || pathname === '/busca') return <div className="gestao chat-route"><Outlet key={identificarConta(usuario)} /></div>;
+  if (pathname === '/conversas' || pathname === '/busca') return <div className="gestao chat-route prisma-norte"><Outlet key={identificarConta(usuario)} /></div>;
   return (
-    <div className={`gestao consumo${pathname === '/conversas' ? ' consumo-chat-layout' : ''}`}>
+    <div className={`gestao consumo prisma-norte${pathname === '/conversas' ? ' consumo-chat-layout' : ''}`}>
       <a className="gestao-skip" href="#consumo-conteudo">Pular para o conteúdo</a>
       <header className="gestao-header">
-        <Link to="/hub" className="gestao-brand" aria-label="Fluidocs — escolher módulo"><img src={logo} alt="" width="30" height="36" /><span>fluidocs<span>.</span></span></Link>
+        <Link to="/hub" className="gestao-brand" aria-label="Prisma Norte — escolher módulo"><img src={logo} alt="" width="30" height="36" /><span>Prisma Norte</span></Link>
         <span className="gestao-module-label">Busca e conversas</span>
         <div className="gestao-account"><span title={usuario.email}>{usuario.nome}</span><AlternarTema /><button className="gestao-button gestao-button-quiet" onClick={sair}><LogOut size={17} aria-hidden="true" />Sair</button></div>
       </header>

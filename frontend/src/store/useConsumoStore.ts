@@ -3,7 +3,7 @@ import { createStore } from 'zustand/vanilla';
 import type { ArmazenamentoLocal, FonteDados } from './useGerenciamentoStore';
 import { responderExemplo, validarFontes, validarPergunta, type DocumentoDemo, type FonteConsulta } from '../services/consumoDemo';
 
-export const CHAVE_CONSUMO = 'fluidocs:conversas-demo:v1';
+export const CHAVE_CONSUMO = 'prisma-norte:conversas-demo:v1';
 export interface MensagemConsumo {
   id: string;
   papel: 'usuario' | 'assistente';
