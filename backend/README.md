@@ -156,8 +156,11 @@ O campo opcional `anexos` aceita metadados como
 tabela `anexo`, vinculados a mensagem do usuario, na mesma transacao da
 interacao, e retornados na consulta da conversa. Isso nao realiza upload nem
 extrai conteudo: as evidencias para o LLM vem da pesquisa dos documentos indexados.
-O filtro `fonte_dados_ids` usa os identificadores dos documentos no Elasticsearch,
-sempre restrito ao indice do usuario autenticado, sem consulta a tabela de fontes.
+O filtro `fonte_dados_ids` é validado pelo serviço de pesquisa antes da consulta:
+as fontes informadas devem existir no banco, pertencer ao usuário autenticado
+e estar ativas. A pesquisa permanece restrita ao índice desse usuário.
+Fontes da implementação: [pesquisa](src/backend/api/services/pesquisa.py) e
+[validação das fontes](src/backend/api/services/fontes_dados.py).
 Todas as operacoes de conversa validam o
 proprietario; conversas de outros usuarios retornam 404.
 
@@ -172,9 +175,13 @@ o modelo. Falhas de comunicacao com o Ollama retornam `503` sem salvar a
 interacao. Se outra mensagem for salva durante a geracao, retorna `409` para
 que a pergunta seja reenviada com o historico atualizado.
 
-Testes das rotas, autenticacao, pesquisa, contexto e persistencia (SQLite em
-memoria e servicos externos simulados):
+## Estado das verificações
 
-```bash
-uv run python -m unittest discover -s tests -v
-```
+Em 10 de setembro de 2026, a pasta `backend/tests` não existe neste checkout.
+A instrução anterior de executar `unittest discover -s tests` não corresponde
+a uma suíte disponível e foi removida. Não há evidência aqui de testes de rotas,
+autenticação, pesquisa ou persistência com SQLite em memória.
+
+Para escolher a validação adequada, consulte as [orientações do backend](AGENTS.md)
+e o [guia operacional](../docs/harness/operacao.md). Checagem de sintaxe não comprova
+comportamento nem integração com serviços externos.

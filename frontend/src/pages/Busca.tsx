@@ -1,324 +1,200 @@
-import React, { useEffect, useMemo, useState, useTransition } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import {
+  ArrowUp,
+  Database,
+  FileSearch,
+  LayoutGrid,
+  LogOut,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
-  File,
-  FileText,
-  Image as ImageIcon,
-  Eye,
-  Filter,
-  Zap,
-  DatabaseZap,
 } from 'lucide-react';
-import { useDadosStore } from '../store/useDadosStore';
-import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
-import { ModalArquivo } from '../components/ModalArquivo';
-import { DadosArquivo } from '../tipos';
-import { api, extrairMensagemErro } from '../services/api';
-import { criarPreviaTexto } from '../utils/formatacaoDocumento';
+import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
+import { identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
+import { pesquisarExemplos, validarFontes, validarPergunta, type DocumentoDemo } from '../services/consumoDemo';
+import { EvidenciaDocumento } from '../components/consumo/EvidenciaDocumento';
+import { FontesChat } from '../components/chat/FontesChat';
+import { AlternarTema } from '../components/AlternarTema';
+import logo from '../assets/fluidocs-logo.png';
+import '../components/chat/Chat.css';
 
-export function Busca() {
-  const { usuario } = useAutenticacaoStore();
-  const { repositorios } = useDadosStore();
-
-  const [termoBusca, setTermoBusca] = useState('');
-  const [termoPesquisado, setTermoPesquisado] = useState('');
-  const [resultadosBusca, setResultadosBusca] = useState<DadosArquivo[]>([]);
-  const [totalResultados, setTotalResultados] = useState(0);
-  const [erroBusca, setErroBusca] = useState<string | null>(null);
-  const [buscaHibrida, setBuscaHibrida] = useState(true);
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [idRepoSelecionado, setIdRepoSelecionado] = useState<string>('');
-  const [arquivoSelecionado, setArquivoSelecionado] = useState<DadosArquivo | null>(null);
-  const [modalAberto, setModalAberto] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const reposAcessiveis = useMemo(
-    () => repositorios.filter(repo =>
-      usuario?.gruposAcesso.some(grupo => repo.gruposAcesso.includes(grupo))
-    ),
-    [repositorios, usuario?.gruposAcesso]
-  );
+function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
+  aberto: boolean;
+  mobile: boolean;
+  usuario: Usuario;
+  aoFechar: () => void;
+  aoSair: () => void;
+}) {
+  const dialogo = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    const primeiroRepositorio = reposAcessiveis[0]?.id ?? '';
+    const elemento = dialogo.current;
+    if (mobile && aberto) elemento?.showModal();
+    else elemento?.close();
+    return () => elemento?.close();
+  }, [mobile, aberto]);
 
-    if (!primeiroRepositorio) {
-      setIdRepoSelecionado('');
-      return;
-    }
-
-    if (!reposAcessiveis.some(repo => repo.id === idRepoSelecionado)) {
-      setIdRepoSelecionado(primeiroRepositorio);
-    }
-  }, [idRepoSelecionado, reposAcessiveis]);
-
-  const obterNomeRepositorio = (idRepositorio: string) => (
-    reposAcessiveis.find(repo => repo.id === idRepositorio)?.nome ?? 'Repositorio selecionado'
-  );
-
-  const getIconeArquivo = (tipo: string) => {
-    switch (tipo?.toLowerCase()) {
-      case 'pdf': return <FileText className="w-5 h-5 text-red-500" />;
-      case 'doc':
-      case 'docx': return <File className="w-5 h-5 text-fluid-blue" />;
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-      case 'image': return <ImageIcon className="w-5 h-5 text-fluid-success" />;
-      default: return <File className="w-5 h-5 text-slate-400" />;
-    }
-  };
-
-  const lidarComBusca = (e: React.FormEvent) => {
-    e.preventDefault();
-    const termo = termoBusca.trim();
-
-    if (!termo) return;
-
-    if (!idRepoSelecionado) {
-      setErroBusca('Selecione um repositorio antes de pesquisar.');
-      setResultadosBusca([]);
-      setTotalResultados(0);
-      return;
-    }
-
-    setErroBusca(null);
-    setTermoPesquisado(termo);
-
-    startTransition(async () => {
-      try {
-        const dados = await api.pesquisarDocumentos(
-          termo,
-          1,
-          10,
-          buscaHibrida,
-          idRepoSelecionado
-        );
-        setResultadosBusca(dados.resultados);
-        setTotalResultados(dados.total);
-      } catch (err) {
-        console.error(err);
-        setResultadosBusca([]);
-        setTotalResultados(0);
-        setErroBusca(extrairMensagemErro(err));
-      }
-    });
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white/80 dark:bg-[#1F2937]/90 backdrop-blur-xl rounded-3xl p-5 border border-slate-200/50 dark:border-slate-800/40 shadow-xl shadow-slate-100/40 dark:shadow-none flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-fluid-blue/10 flex items-center justify-center text-fluid-blue shadow-inner">
-            <Search className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">Busca de Documentos</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Pesquise por palavras-chave ou contexto em seus documentos</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 bg-slate-50/50 dark:bg-slate-900/20 px-4 py-2 border border-slate-100 dark:border-slate-800 rounded-2xl whitespace-nowrap">
-          <label className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-            <DatabaseZap className="w-4 h-4 text-fluid-blue animate-[pulse_3s_infinite]" />
-            Repositorio:
-          </label>
-          <select
-            value={idRepoSelecionado}
-            onChange={(e) => setIdRepoSelecionado(e.target.value)}
-            className="block pl-3 pr-8 py-1.5 border border-slate-200/60 dark:border-slate-700/60 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-fluid-blue/20 focus:border-fluid-blue text-xs font-bold transition-all appearance-none cursor-pointer"
-          >
-            {reposAcessiveis.length === 0 ? (
-              <option value="">NENHUM REPOSITORIO</option>
-            ) : (
-              reposAcessiveis.map(repo => (
-                <option key={repo.id} value={repo.id}>{repo.nome.toUpperCase()}</option>
-              ))
-            )}
-          </select>
-        </div>
-      </div>
-
-      <div className="bg-white/80 dark:bg-[#1F2937]/90 backdrop-blur-md rounded-3xl border border-slate-200/50 dark:border-slate-800/40 p-6 shadow-xl shadow-slate-100/10 dark:shadow-none">
-        <form onSubmit={lidarComBusca} className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-450">
-                <Search className="w-5.5 h-5.5 text-fluid-blue" />
-              </div>
-              <input
-                type="text"
-                value={termoBusca}
-                onChange={(e) => setTermoBusca(e.target.value)}
-                placeholder="Pesquise por termos, frases ou informacoes dos documentos..."
-                className="block w-full pl-12 pr-4 py-3.5 bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-fluid-blue/20 focus:border-fluid-blue text-[15px] font-medium placeholder-slate-400 dark:placeholder-slate-500 shadow-inner"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setMostrarFiltros(!mostrarFiltros)}
-                className={`p-3.5 border rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-                  mostrarFiltros
-                    ? 'border-fluid-blue bg-fluid-blue/10 text-fluid-blue shadow-inner'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900/40'
-                }`}
-                title="Configuracoes de busca"
-              >
-                <Filter className="w-5 h-5" />
-              </button>
-              <button
-                type="submit"
-                disabled={isPending || !idRepoSelecionado}
-                className="px-7 py-3.5 bg-fluid-blue hover:bg-fluid-deep text-white font-bold rounded-2xl shadow-lg shadow-fluid-blue/15 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-              >
-                {isPending ? 'Buscando...' : 'Pesquisar'}
-              </button>
-            </div>
-          </div>
-
-          <AnimatePresence>
-            {mostrarFiltros && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden border-t border-slate-100 dark:border-slate-800 pt-4"
-              >
-                <div className="flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-150/10 inline-flex">
-                  <input
-                    type="checkbox"
-                    id="modo_hibrido_busca"
-                    checked={buscaHibrida}
-                    onChange={(e) => setBuscaHibrida(e.target.checked)}
-                    className="h-4.5 w-4.5 rounded border-slate-350 text-fluid-blue focus:ring-fluid-blue cursor-pointer"
-                  />
-                  <label htmlFor="modo_hibrido_busca" className="text-xs font-bold text-slate-600 dark:text-slate-300 select-none cursor-pointer">
-                    Ampliar busca por contexto, nao so por palavras exatas
-                  </label>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </form>
-      </div>
-
-      {erroBusca && (
-        <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-700 dark:text-amber-300">
-          {erroBusca}
-        </div>
-      )}
-
-      {isPending ? (
-        <div className="space-y-4">
-          {[1, 2].map(idx => (
-            <div key={idx} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 p-5 flex gap-4 animate-pulse">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex-shrink-0" />
-              <div className="flex-1 space-y-2.5">
-                <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
-                <div className="h-4 bg-slate-100 dark:bg-slate-700/50 rounded w-3/4" />
-                <div className="h-3 bg-slate-100 dark:bg-slate-700/50 rounded w-1/4" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : termoPesquisado ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">
-            <span>Resultados da busca ({totalResultados})</span>
-            <span className="flex items-center gap-1 text-fluid-blue">
-              <Zap className="w-3.5 h-3.5 text-fluid-blue" />
-              Modo: {buscaHibrida ? 'CONTEXTO AMPLIADO' : 'PALAVRAS EXATAS'}
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {resultadosBusca.map(resultado => (
-              <div
-                key={resultado.id}
-                className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/40 dark:border-slate-800/40 p-5.5 hover:border-slate-350 dark:hover:border-slate-650 hover:shadow-md transition-all flex items-start gap-4"
-              >
-                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/20">
-                  {getIconeArquivo(resultado.tipo)}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-extrabold text-slate-900 dark:text-white truncate text-base pr-4">
-                      {resultado.titulo}
-                    </h4>
-                    <button
-                      onClick={() => {
-                        setArquivoSelecionado({
-                          ...resultado,
-                          repositorio: obterNomeRepositorio(resultado.repositorio),
-                        });
-                        setModalAberto(true);
-                      }}
-                      className="p-2 text-slate-400 hover:text-fluid-blue hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
-                      title="Visualizar trechos e detalhes"
-                    >
-                      <Eye className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-2.5 line-clamp-2">
-                    {obterNomeRepositorio(resultado.repositorio)}
-                  </p>
-
-                  <div className="bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-2xl border border-slate-200/20 dark:border-slate-800/20 mb-2.5">
-                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                      {criarPreviaTexto(resultado.trecho || '')}
-                    </p>
-                  </div>
-
-                  {(resultado.tamanho || resultado.data) && (
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 flex-wrap gap-2">
-                      {resultado.tamanho && <span>{resultado.tamanho}</span>}
-                      {resultado.data && <span>{resultado.data}</span>}
-                    </div>
-                  )}
-
-                  {typeof resultado.pontuacao === 'number' && (
-                    <div className="text-[10px] font-extrabold text-fluid-blue uppercase tracking-widest">
-                      Pontuacao do documento: {resultado.pontuacao.toFixed(2)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {resultadosBusca.length === 0 && (
-              <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500">
-                Nenhum documento encontrado para os termos informados.
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white/80 dark:bg-[#1F2937]/90 backdrop-blur-xl rounded-3xl border border-slate-200/50 dark:border-slate-800/40 p-12 flex flex-col items-center justify-center text-center">
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-            className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-fluid-blue to-fluid-deep text-white flex items-center justify-center mb-5 shadow-lg shadow-fluid-blue/20"
-          >
-            <Search className="w-9 h-9" />
-          </motion.div>
-          <h3 className="text-lg font-extrabold text-slate-800 dark:text-white tracking-tight mb-2">Comece a sua pesquisa</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-            Digite palavras-chave ou frases para buscar no repositorio selecionado. Use o modo de contexto ampliado para resultados mais relevantes.
-          </p>
-        </div>
-      )}
-
-      {arquivoSelecionado && (
-        <ModalArquivo 
-          arquivo={arquivoSelecionado} 
-          isOpen={modalAberto}
-          onClose={() => setModalAberto(false)}
-        />
-      )}
+  const conteudo = <>
+    <div className="chat-sidebar-topo">
+      <Link to="/hub" className="chat-brand" aria-label="Fluidocs — escolher módulo">
+        <img src={logo} alt="" />
+        <span>fluidocs<span>.</span></span>
+      </Link>
+      <button className="chat-icon" aria-label="Recolher navegação" onClick={aoFechar}><PanelLeftClose size={19} /></button>
     </div>
-  );
+    <nav className="chat-nav busca-nav" aria-label="Busca e conversas">
+      <Link to="/busca" className="selecionada" aria-current="page"><Search size={17} />Buscar documentos</Link>
+      <Link to="/conversas"><MessageSquare size={17} />Conversas</Link>
+    </nav>
+    <div className="busca-sidebar-contexto">
+      <Database size={20} aria-hidden="true" />
+      <div>
+        <strong>Consulte com contexto</strong>
+        <p>Escolha uma ou mais fontes antes de pesquisar. Os resultados ficam limitados ao conteúdo selecionado.</p>
+      </div>
+    </div>
+    <div className="busca-sidebar-nota">
+      <span>Demonstração local</span>
+      <p>Os resultados usam textos fictícios sobre o Fluidocs. Nenhum arquivo real é consultado.</p>
+    </div>
+    <div className="chat-sidebar-base">
+      <Link to="/hub"><LayoutGrid size={17} />Trocar módulo</Link>
+      <div className="chat-conta">
+        <span className="chat-avatar" aria-hidden="true">{usuario.nome.trim().slice(0, 1).toUpperCase()}</span>
+        <span className="chat-conta-nome">{usuario.nome}<small>Busca e conversas</small></span>
+        <AlternarTema />
+        <button className="chat-icon" title="Sair" aria-label="Sair" onClick={aoSair}><LogOut size={17} /></button>
+      </div>
+    </div>
+  </>;
+
+  if (mobile) return <dialog ref={dialogo} id="busca-sidebar" className="chat-sidebar chat-sidebar-dialog" aria-label="Navegação da busca" onCancel={e => { e.preventDefault(); aoFechar(); }} onClick={e => {
+    if (e.target !== e.currentTarget) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    if (e.clientX > r.right || e.clientY > r.bottom) aoFechar();
+  }}>{conteudo}</dialog>;
+
+  return <aside id="busca-sidebar" className="chat-sidebar" hidden={!aberto} aria-label="Navegação da busca">{conteudo}</aside>;
+}
+
+export function Busca() {
+  const usuario = useAutenticacaoStore(s => s.usuario)!;
+  const sair = useAutenticacaoStore(s => s.sair);
+  const conta = identificarConta(usuario);
+  const { fontes, erroLeitura: erroFontes, carregar } = useGerenciamentoStore(s => s);
+  const minhas = fontes.filter(f => f.conta === conta);
+  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  const [termo, setTermo] = useState('');
+  const [pesquisa, setPesquisa] = useState<{ termo: string; resultados: DocumentoDemo[] } | null>(null);
+  const [erro, setErro] = useState('');
+  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
+  const [navegacaoAberta, setNavegacaoAberta] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
+  const campo = useRef<HTMLInputElement>(null);
+  const navegacaoBotao = useRef<HTMLButtonElement>(null);
+  const idsValidos = selecionadas.filter(id => minhas.some(f => f.id === id));
+
+  useEffect(() => {
+    setSelecionadas(ids => ids.filter(id => fontes.some(f => f.id === id && f.conta === conta)));
+    setPesquisa(null);
+  }, [fontes, conta]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 760px)');
+    const adaptar = () => { setMobile(media.matches); setNavegacaoAberta(!media.matches); };
+    media.addEventListener('change', adaptar);
+    return () => media.removeEventListener('change', adaptar);
+  }, []);
+
+  function fecharNavegacao() {
+    setNavegacaoAberta(false);
+    requestAnimationFrame(() => navegacaoBotao.current?.focus());
+  }
+
+  function pesquisar(e: FormEvent) {
+    e.preventDefault();
+    if (erroFontes) return;
+    try {
+      const consulta = validarPergunta(termo);
+      const escopo = validarFontes(conta, fontes, selecionadas);
+      setPesquisa({ termo: consulta, resultados: pesquisarExemplos(consulta, escopo) });
+      setErro('');
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível pesquisar. Tente novamente.');
+    }
+  }
+
+  function definirExemplo(exemplo: string) {
+    setTermo(exemplo);
+    setPesquisa(null);
+    setErro('');
+    requestAnimationFrame(() => campo.current?.focus());
+  }
+
+  return <div className={`chat-app busca-app${navegacaoAberta && !mobile ? ' chat-com-sidebar' : ''}`}>
+    <a className="chat-skip" href="#busca-conteudo">Pular para a busca</a>
+    <BarraLateralBusca aberto={navegacaoAberta} mobile={mobile} usuario={usuario} aoFechar={fecharNavegacao} aoSair={sair} />
+    <main id="busca-conteudo" className="chat-main" tabIndex={-1}>
+      <header className="chat-header busca-header">
+        <div className="chat-header-inicio">
+          <button ref={navegacaoBotao} className="chat-icon" aria-label={navegacaoAberta ? 'Recolher navegação' : 'Abrir navegação'} aria-expanded={navegacaoAberta} aria-controls="busca-sidebar" onClick={() => setNavegacaoAberta(!navegacaoAberta)}><PanelLeftOpen size={20} /></button>
+          <span className="chat-header-nome">Fluidocs<span>Busca</span></span>
+        </div>
+        {pesquisa && <span className="busca-header-meta" role="status">{pesquisa.resultados.length} documento{pesquisa.resultados.length === 1 ? '' : 's'} encontrado{pesquisa.resultados.length === 1 ? '' : 's'}</span>}
+      </header>
+
+      {erroFontes && <div className="chat-alerta" role="alert">{erroFontes}<button onClick={carregar}>Recarregar fontes</button></div>}
+
+      <div className={`busca-corpo${pesquisa ? ' busca-com-resultados' : ' busca-inicial'}`}>
+        {!pesquisa && <div className="busca-boas-vindas">
+          <h1>Encontre o trecho certo<br />nos seus documentos.</h1>
+          <p>Escolha as fontes, descreva o que procura e confira a origem de cada resultado.</p>
+        </div>}
+
+        <div className="busca-area-consulta">
+          <form className="busca-compositor" onSubmit={pesquisar}>
+            <label htmlFor="consulta" className="chat-sr-only">O que você está procurando?</label>
+            <input ref={campo} id="consulta" type="search" maxLength={2000} value={termo} onChange={e => setTermo(e.target.value)} placeholder="O que você quer encontrar?" required aria-describedby="busca-ajuda" />
+            <div className="chat-compositor-ferramentas">
+              <FontesChat fontes={minhas} selecionadas={idsValidos} aoMudar={ids => { setSelecionadas(ids); setPesquisa(null); setErro(''); }} desabilitado={!!erroFontes} contexto="busca" />
+              <span id="busca-ajuda" className="chat-dica-envio">{idsValidos.length ? `${idsValidos.length} fonte${idsValidos.length > 1 ? 's' : ''} selecionada${idsValidos.length > 1 ? 's' : ''}` : 'Escolha o contexto'}</span>
+              <button className="chat-enviar" title="Pesquisar documentos" aria-label="Pesquisar documentos" disabled={!idsValidos.length || !termo.trim() || !!erroFontes}><ArrowUp size={20} /></button>
+            </div>
+          </form>
+          {erro && <p role="alert" className="chat-alerta">{erro}</p>}
+          {!pesquisa && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
+            {['Indexação de documentos', 'Organizar fontes de dados', 'Origem das respostas'].map(exemplo => <button key={exemplo} onClick={() => definirExemplo(exemplo)}>{exemplo}</button>)}
+          </div>}
+          <p className="chat-rodape">Os resultados desta demonstração são fictícios e ficam limitados às fontes selecionadas.</p>
+        </div>
+
+        {pesquisa && <section className="busca-resultados" aria-labelledby="resultados-titulo">
+          <div className="busca-resultados-cabecalho">
+            <div>
+              <h1 id="resultados-titulo">Resultados para “{pesquisa.termo}”</h1>
+              <p>Trechos mais relacionados dentro das fontes que você selecionou.</p>
+            </div>
+            <button className="busca-nova-consulta" onClick={() => { setTermo(''); setPesquisa(null); setErro(''); requestAnimationFrame(() => campo.current?.focus()); }}><Search size={16} />Nova consulta</button>
+          </div>
+
+          {pesquisa.resultados.length ? <div className="busca-lista">
+            {pesquisa.resultados.map((documento, indice) => <article className="busca-resultado" key={documento.id}>
+              <span className="busca-resultado-ordem" aria-hidden="true">{String(indice + 1).padStart(2, '0')}</span>
+              <div className="busca-resultado-conteudo">
+                <h2>{documento.titulo}</h2>
+                <p>{documento.trecho.length > 220 ? `${documento.trecho.slice(0, 220)}…` : documento.trecho}</p>
+                <EvidenciaDocumento documento={documento} />
+              </div>
+            </article>)}
+          </div> : <div className="busca-sem-resultados">
+            <FileSearch size={30} strokeWidth={1.5} aria-hidden="true" />
+            <h2>Nenhum documento encontrado</h2>
+            <p>Tente pesquisar sobre fontes de dados, indexação ou evidências, ou ajuste as fontes selecionadas.</p>
+            <button className="chat-primary" onClick={() => { setPesquisa(null); requestAnimationFrame(() => campo.current?.focus()); }}>Editar consulta</button>
+          </div>}
+        </section>}
+      </div>
+    </main>
+  </div>;
 }

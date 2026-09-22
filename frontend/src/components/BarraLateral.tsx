@@ -1,6 +1,6 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Database, Users, LogOut, X, Search, MessageSquare, Sparkles } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Database, KeyRound, Users, LayoutGrid, LogOut, X, Search, MessageSquare, Sparkles } from 'lucide-react';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { clsx } from 'clsx';
 import { motion } from 'motion/react';
@@ -11,19 +11,22 @@ interface PropsBarraLateral {
 
 export function BarraLateral({ aoFechar }: PropsBarraLateral) {
   const { usuario, sair } = useAutenticacaoStore();
+  const { pathname } = useLocation();
+  const gerenciamento = pathname === '/repositorios' || pathname === '/equipe';
 
   const secoes = [
     {
-      titulo: 'Trabalho',
+      titulo: 'Busca e conversas',
       itens: [
-        { para: '/busca', icone: Search, rotulo: 'Busca de Documentos' },
-        { para: '/assistente', icone: MessageSquare, rotulo: 'Assistente Cognitivo' },
+        { para: '/busca', icone: Search, rotulo: 'Busca de documentos' },
+        { para: '/assistente', icone: MessageSquare, rotulo: 'Conversas' },
       ]
     },
     {
-      titulo: 'Administração',
+      titulo: 'Gerenciamento',
       itens: [
-        { para: '/repositorios', icone: Database, rotulo: 'Repositórios' }
+        { para: '/fontes-de-dados', icone: Database, rotulo: 'Fontes de Dados' },
+        { para: '/chaves-api', icone: KeyRound, rotulo: 'Chaves de API' }
         /*,
         ESCONDIDO POIS NAO ESTA SENDO UTILIZADO NO MOMENTO
         ...(usuario?.funcao === 'admin' ? [{ para: '/equipe', icone: Users, rotulo: 'Equipe e Acessos' }] : []),*/
@@ -63,6 +66,7 @@ export function BarraLateral({ aoFechar }: PropsBarraLateral) {
         {aoFechar && (
           <button 
             onClick={aoFechar}
+            aria-label="Fechar menu"
             className="md:hidden p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -72,7 +76,10 @@ export function BarraLateral({ aoFechar }: PropsBarraLateral) {
 
       {/* Navigation sections */}
       <nav className="flex-1 overflow-y-auto py-6 px-4">
-        {secoes.map((secao) => (
+        <NavLink to="/hub" onClick={aoFechar} className="mb-6 flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-fluid-deep dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
+          <LayoutGrid className="h-4 w-4" aria-hidden="true" />Trocar módulo
+        </NavLink>
+        {secoes.filter((secao) => secao.titulo === (gerenciamento ? 'Gerenciamento' : 'Busca e conversas')).map((secao) => (
           <div key={secao.titulo} className="mb-6">
             <p className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-4 mb-2.5">
               {secao.titulo}

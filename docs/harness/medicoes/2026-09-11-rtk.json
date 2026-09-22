@@ -1,0 +1,82 @@
+{
+  "date": "2026-09-11",
+  "unit": "bytes stdout + stderr",
+  "cases": [
+    {
+      "command": [
+        "git",
+        "status"
+      ],
+      "raw_exit": 0,
+      "rtk_exit": 0,
+      "raw_bytes": 632,
+      "rtk_bytes": 259,
+      "reduction_percent": 59.02,
+      "same_output": false
+    },
+    {
+      "command": [
+        "git",
+        "log",
+        "-5",
+        "--oneline"
+      ],
+      "raw_exit": 0,
+      "rtk_exit": 0,
+      "raw_bytes": 348,
+      "rtk_bytes": 348,
+      "reduction_percent": 0.0,
+      "same_output": true
+    },
+    {
+      "command": [
+        "rg",
+        "-n",
+        "BaseResponse",
+        "backend/src/backend/api/routes"
+      ],
+      "raw_exit": 0,
+      "rtk_exit": 0,
+      "raw_bytes": 5858,
+      "rtk_bytes": 5805,
+      "reduction_percent": 0.9,
+      "same_output": false
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "--verify",
+        "refs/heads/harness-pilot-missing-ref"
+      ],
+      "raw_exit": 128,
+      "rtk_exit": 128,
+      "raw_bytes": 32,
+      "rtk_bytes": 32,
+      "reduction_percent": 0.0,
+      "same_output": true
+    }
+  ],
+  "rtk_before": {
+    "summary": {
+      "total_commands": 9,
+      "total_input": 875,
+      "total_output": 693,
+      "total_saved": 182,
+      "avg_savings_pct": 20.8,
+      "total_time_ms": 935,
+      "avg_time_ms": 103
+    }
+  },
+  "rtk_after": {
+    "summary": {
+      "total_commands": 13,
+      "total_input": 2585,
+      "total_output": 2297,
+      "total_saved": 288,
+      "avg_savings_pct": 11.14119922630561,
+      "total_time_ms": 1214,
+      "avg_time_ms": 93
+    }
+  }
+}

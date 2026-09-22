@@ -15,9 +15,9 @@ export function BarraNavegacao({ aoClicarMenu }: PropsBarraNavegacao) {
   // Simple breadcrumbs builder
   const obterTituloRota = (caminho: string) => {
     switch (caminho) {
-      case '/hub': return 'Assistente e Pesquisa';
-      case '/assistente': return 'Assistente Cognitivo';
-      case '/repositorios': return 'Repositórios de Dados';
+      case '/busca': return 'Busca e conversas';
+      case '/assistente': return 'Busca e conversas';
+      case '/repositorios': return 'Gerenciamento';
       case '/equipe': return 'Equipe & Controle de Acessos';
       default: return 'Painel Fluidocs';
     }

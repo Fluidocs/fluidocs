@@ -328,3 +328,16 @@ thumb
 sketch
 
 # End of https://www.toptal.com/developers/gitignore/api/python,node,react
+
+# Impeccable - temporary state
+# Local RTK history and diagnostic output (never version these files).
+.harness-local/
+
+# Questions / transient interaction state
+.impeccable/questions/
+
+# Generated review artifacts
+.impeccable/review/
+
+# Temporary mocks / decisions generated during a run
+.impeccable/mocks/
