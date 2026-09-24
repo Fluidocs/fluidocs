@@ -12,7 +12,9 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     "descricao" VARCHAR(255),
     "usuario_id" INT NOT NULL REFERENCES "usuario" ("id") ON DELETE CASCADE
 );
-        ALTER TABLE "usuario" ADD "limite_chaves_api" INT NOT NULL DEFAULT 5;"""
+        ALTER TABLE "usuario" 
+        ADD COLUMN IF NOT EXISTS"limite_chaves_api" 
+        INT NOT NULL DEFAULT 5;"""
 
 
 async def downgrade(db: BaseDBAsyncClient) -> str:

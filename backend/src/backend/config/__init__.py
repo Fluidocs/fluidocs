@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
         config=TORTOISE_CONFIG,
         _enable_global_fallback=True,
     )
-    await Tortoise.generate_schemas(safe=True)
+    # await Tortoise.generate_schemas(safe=True)
 
     yield
 

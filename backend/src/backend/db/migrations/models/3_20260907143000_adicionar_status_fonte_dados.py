@@ -7,7 +7,8 @@ RUN_IN_TRANSACTION = True
 async def upgrade(db: BaseDBAsyncClient) -> str:
     return """
         ALTER TABLE "fontes_de_dados"
-        ADD "status" VARCHAR(10) NOT NULL DEFAULT 'ativa';"""
+        ADD COLUMN IF NOT EXISTS "status" 
+        VARCHAR(10) NOT NULL DEFAULT 'ativa';"""
 
 
 async def downgrade(db: BaseDBAsyncClient) -> str:
