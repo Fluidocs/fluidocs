@@ -85,9 +85,11 @@ docker compose up
 
 O fluxo de `fluidocs-agente-api` esta integrado ao cliente Ollama existente.
 Recebe a pergunta e chama o `ServicoPesquisa` existente, com pesquisa hibrida
-no indice do usuario autenticado. Recupera a primeira pagina de 10 documentos,
-com ate 5 trechos por documento, e prioriza os trechos por pontuacao, eliminando
-duplicados e respeitando `OLLAMA_MAX_CONTEXT_CHARS` antes de chamar o LLM.
+no indice do usuario autenticado. Recupera a primeira pagina de 5 documentos,
+com ate 5 trechos por documento. Envia ao LLM somente os 5 trechos de maior
+pontuacao, sem duplicados, com ate 1.200 caracteres cada e respeitando tambem
+`OLLAMA_MAX_CONTEXT_CHARS`. O prompt usa JSON compacto e o historico considera
+no maximo as 20 mensagens mais recentes, dentro de `OLLAMA_MAX_HISTORY_CHARS`.
 Nao e necessario enviar trechos nem executar uma pesquisa separadamente.
 
 Configure no `.env` (valores de referencia em `.env.example`):
@@ -118,34 +120,50 @@ O model anterior `ChatLLM` permanece intacto; nenhum historico legado em JSON e
 convertido automaticamente. `ChaveAPI`, `FonteDados` e `Anexo` representam o
 diagrama; esta entrega nao acrescenta endpoints de gestao de chaves ou upload.
 
-As rotas usam o JWT existente (`Authorization: Bearer <token>`) e retornam
+As rotas de pesquisa e conversa usam uma chave de API cadastrada no header
+`X-API-Key: <token>` e retornam
 `BaseResponse`, com `meta`, `dados` e `paginacao`:
 
-- `POST /api/conversas`: inicia ou continua uma conversa e salva as mensagens.
-- `POST /api/conversas/nova`: cria sem corpo uma conversa sem nome e sem mensagens (201).
+- `POST /api/conversas/perguntar`: envia uma pergunta, inicia ou continua uma conversa e salva as mensagens.
+- `POST /api/conversas`: cria sem corpo uma conversa sem nome e sem mensagens (201).
 - `PATCH /api/conversas/{conversa_id}`: altera o nome com `{"titulo": "Novo nome"}`.
 - `DELETE /api/conversas/{conversa_id}`: exclui a conversa, suas mensagens e anexos.
 - `GET /api/conversas?pagina=1&por_pagina=20`: lista as conversas do usuario.
 - `GET /api/conversas/{conversa_id}`: retorna a conversa e suas mensagens em ordem.
 
-Exemplo de corpo para `POST /api/conversas`:
+Para uma integracao externa, crie a chave em `POST /api/chaves-api` usando o
+JWT do dono da conta e o corpo `{"nome": "Integracao"}`. Use o token retornado
+em `dados.token` no header `X-API-Key`. A chave identifica o dono dos documentos
+e das conversas; chaves do mesmo usuario acessam as mesmas conversas.
+Ausencia de chave, chave invalida ou removida retorna 401. O dono da chave deve
+ter ao menos uma fonte ativa cadastrada; caso contrario, retorna 403.
+As rotas administrativas de usuarios, fontes e chaves continuam usando JWT.
+
+`POST /api/pesquisar` tambem usa `X-API-Key`. Sem filtro de fontes, pesquisa
+somente nas fontes ativas cadastradas do dono da chave. Com filtro, valida
+que todas as fontes pertencem a esse usuario e estao ativas.
+
+Exemplo de corpo para `POST /api/conversas/perguntar`:
 
 ```json
 {
-  "pergunta": "Qual o prazo para solicitar ferias?"
+  "pergunta": "Qual o prazo para solicitar ferias?",
+  "fonte_dados_ids": [1]
 }
 ```
 
 O campo `dados` da resposta contem `conversa_id` e `resposta`. Envie esse
 `conversa_id` com a proxima pergunta para continuar a conversa. Cada pergunta
-executa uma nova pesquisa. `fonte_dados_ids` e um filtro opcional; quando omitido,
-a pesquisa considera todas as fontes no indice do usuario.
+executa uma nova pesquisa. `fonte_dados_ids` e obrigatorio em cada pergunta,
+com pelo menos uma fonte ativa do usuario. Ausencia ou lista vazia retorna 422;
+fontes inexistentes, de outro usuario ou em exclusao retornam 404 antes da
+pesquisa e da chamada ao LLM. A pesquisa considera somente as fontes selecionadas.
 O historico e carregado exclusivamente da tabela `mensagem`, pela conversa do
 usuario autenticado. Os campos legados `historico`, `trechos`, `documentos` e
 `titulo` enviados na pergunta sao ignorados; o contexto vem da pesquisa interna.
 Sem `conversa_id`, a API cria automaticamente uma conversa cujo titulo e a
 pergunta, limitado aos 255 caracteres da tabela. A mensagem mantem o texto inteiro.
-Uma conversa criada por `/conversas/nova` retorna `titulo: ""` e recebe o nome
+Uma conversa criada por `POST /api/conversas` retorna `titulo: ""` e recebe o nome
 da primeira pergunta, exceto se ja tiver sido renomeada pelo usuario. O titulo
 escolhido e preservado nas perguntas seguintes. Nao e necessaria nova migracao.
 No banco e na consulta das
@@ -169,6 +187,14 @@ existentes `GET /api/me` e `PATCH /api/me`. Seu valor atual no banco e enviado
 como instrucao de sistema em cada chamada ao LLM, definindo o comportamento
 da resposta. Se estiver nulo ou em branco, usa o comportamento padrao. As
 regras de fundamentacao em documentos permanecem em ambos os casos.
+
+Anexos continuam ausentes da entrada. A resposta imediata em `dados.anexos` e
+a consulta das mensagens retornam os anexos correspondentes aos dois trechos
+mais bem pontuados enviados ao LLM (ou menos, se nao houver dois). Cada anexo
+mantem o formato existente: `id`, `mensagem_id`, `nome` e `extensao`, vinculado
+a mensagem do assistente. Nao inclui conteudo, pontuacao ou campo de evidencia.
+O prompt pede uma sintese natural, sem listar fontes no corpo da resposta.
+Os models permanecem inalterados e essa otimizacao nao exige nova migration.
 
 Sem trechos uteis, a API salva uma resposta de contexto insuficiente sem chamar
 o modelo. Falhas de comunicacao com o Ollama retornam `503` sem salvar a

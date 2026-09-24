@@ -3,7 +3,7 @@ from time import perf_counter
 
 from backend.api.schemas.base_response import BaseResponse
 from backend.api.schemas.backoffice.pesquisa_schemas import PesquisaRequest, DocumentoPesquisaResponse
-from backend.api.dependencies.auth import obter_usuario_autenticado
+from backend.api.dependencies.chave_api import obter_usuario_por_chave_api
 from backend.api.dependencies.pesquisa import obter_servico_pesquisa
 from backend.api.models.usuario import Usuario
 from backend.api.services.pesquisa import ServicoPesquisa
@@ -21,7 +21,7 @@ pesquisa_router = APIRouter(
 )
 async def pesquisar(
     dados: PesquisaRequest,
-    usuario: Usuario = Depends(obter_usuario_autenticado),
+    usuario: Usuario = Depends(obter_usuario_por_chave_api),
     servico_pesquisa: ServicoPesquisa = Depends(obter_servico_pesquisa)
 ) -> BaseResponse[list[DocumentoPesquisaResponse]]:
     inicio = perf_counter()

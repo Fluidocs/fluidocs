@@ -11,6 +11,7 @@ class TrechoContexto(BaseModel):
 
     id_trecho: int | str | None = Field(default=None, validation_alias=AliasChoices("id_trecho", "id"))
     id_repositorio: str | None = None
+    documento_id: str | None = None
     fonte_dados_id: int | None = None
     nome_documento: str | None = Field(default=None, validation_alias=AliasChoices("nome_documento", "documento"))
     pontuacao: float | None = None
@@ -32,7 +33,11 @@ class MensagemHistorico(BaseModel):
     conteudo: str = Field(validation_alias=AliasChoices("conteudo", "content"), min_length=1)
 
 
-class AnexoRequest(BaseModel):
+class AnexoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    mensagem_id: int
     nome: str = Field(min_length=1, max_length=255)
     extensao: str = Field(min_length=1, max_length=4)
 
@@ -45,25 +50,20 @@ class AnexoRequest(BaseModel):
         return valor
 
 
-class AnexoResponse(AnexoRequest):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    mensagem_id: int
-
-
 class ConversaRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     conversa_id: int | None = Field(default=None, gt=0)
-    fonte_dados_ids: list[FonteDadosId] = Field(default_factory=list)
+    fonte_dados_ids: list[FonteDadosId] = Field(
+        min_length=1,
+        description='Selecione ao menos uma fonte de dados ativa do usuario para pesquisar os documentos.',
+    )
 
     pergunta: str = Field(
         validation_alias=AliasChoices("pergunta", "conteudo", "question"),
         min_length=1,
         description="Pergunta do usuario a ser respondida pelo agente.",
     )
-    anexos: list[AnexoRequest] = Field(default_factory=list)
 
     @field_validator('pergunta')
     @classmethod
@@ -97,10 +97,12 @@ class AtualizarConversaRequest(BaseModel):
 
 class ConversaResponse(BaseModel):
     resposta: str
+    trechos_anexos: list[TrechoContexto] = Field(default_factory=list, exclude=True)
 
 
 class ResponderConversaResponse(ConversaResponse):
     conversa_id: int
+    anexos: list[AnexoResponse] = Field(default_factory=list)
 
 
 class MensagemResponse(BaseModel):
