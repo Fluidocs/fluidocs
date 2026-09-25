@@ -15,7 +15,7 @@ from backend.api.dependencies.auth import obter_usuario_autenticado
 
 fontes_dados_router = APIRouter(
     prefix='/fontes-dados',
-    tags=['fontes-de-dados']
+    tags=['Fontes de Dados']
 )
 
 

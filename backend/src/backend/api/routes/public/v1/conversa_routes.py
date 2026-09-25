@@ -15,7 +15,8 @@ from backend.api.schemas.backoffice.conversa_schemas import (
 from backend.api.schemas.base_response import BaseResponse, MetaSchema, PaginacaoSchema
 from backend.api.services.conversa import ServicoConversa
 
-conversa_router = APIRouter(tags=['conversa'])
+
+conversa_router = APIRouter()
 
 
 @conversa_router.post(
