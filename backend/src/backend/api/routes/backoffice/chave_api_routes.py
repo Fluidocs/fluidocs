@@ -14,7 +14,7 @@ from backend.api.schemas.backoffice.chave_api_schemas import (
 from backend.api.schemas.base_response import BaseResponse, MetaSchema
 from backend.api.services.chave_api import ServicoChaveAPI
 
-chave_api_router = APIRouter(tags=['chave-api'])
+chave_api_router = APIRouter(tags=['Chaves de API'])
 
 
 @chave_api_router.post(

@@ -9,7 +9,7 @@ from backend.api.models.usuario import Usuario
 from backend.api.services.pesquisa import ServicoPesquisa
 
 pesquisa_router = APIRouter(
-    tags=['pesquisa']
+    tags=['Pública']
 )
 
 
@@ -17,7 +17,7 @@ pesquisa_router = APIRouter(
 @pesquisa_router.post(
     path='/pesquisar',
     status_code=200,
-    description='Realiza a pesquisa em um índice a partir dos tipos "lexical", "vetorial" e "híbrida".'
+    description='Realiza a pesquisa em um índice a partir dos tipos "lexical" e "híbrida".'
 )
 async def pesquisar(
     dados: PesquisaRequest,

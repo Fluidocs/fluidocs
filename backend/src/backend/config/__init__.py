@@ -58,9 +58,6 @@ def inicializar_app() -> FastAPI:
             'dados': {'status_code': 200}
         }
 
-    app.include_router(
-        build_router(),
-        prefix='/api',
-    )
+    app.include_router(build_router())
 
     return app

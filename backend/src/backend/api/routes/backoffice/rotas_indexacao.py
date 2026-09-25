@@ -18,7 +18,7 @@ from backend.api.services.indexacao.submissao_indexacao import (
 )
 
 
-indexacao_router = APIRouter(tags=['indexacao'])
+indexacao_router = APIRouter(tags=['Indexação'])
 
 @indexacao_router.post(
     path='/',
