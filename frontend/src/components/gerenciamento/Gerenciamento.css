@@ -176,14 +176,23 @@
 .gestao-index-dialog > .gestao-form-actions { margin: 24px 28px 0; padding: 18px 0 24px; }
 .gestao-source-actions { align-items: center; }
 .gestao-index-button { white-space: nowrap; margin-right: 6px; }
-.gestao-documents { margin-top: 12px; max-width: 70ch; }
-.gestao-documents summary { display: inline-flex; align-items: center; gap: 7px; color: var(--g-accent); font-size: 11px; cursor: pointer; user-select: none; }
-.gestao-documents summary::marker { color: var(--g-muted); }
-.gestao-documents ul { margin: 9px 0 4px; border-top: 1px solid var(--g-line); }
-.gestao-documents li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; color: var(--g-muted); font-size: 11px; }
-.gestao-documents li + li { border-top: 1px solid var(--g-line); }
-.gestao-documents li span { overflow-wrap: anywhere; color: var(--g-ink); }
-.gestao-documents time { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.gestao-documents-trigger { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; padding: 3px 0; color: var(--g-accent); font-size: 11px; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.gestao-documents-trigger:hover:not(:disabled) { color: var(--g-ink); }
+.gestao-documents-dialog { max-width: 680px; padding: 0; overflow: hidden; }
+.gestao-nav-action { display: flex; align-items: center; gap: 12px; flex-shrink: 0; width: 100%; min-height: 44px; margin-top: auto; padding: 10px 14px; border-radius: 10px; background: var(--chat-tint); color: var(--chat-accent); font-size: 13px; font-weight: 700; text-align: left; }
+.gestao-nav-action:hover { box-shadow: inset 0 0 0 1px var(--chat-accent); }
+.gestao-nav-action svg { flex-shrink: 0; }
+.gestao-index-source { display: grid; gap: 7px; margin: 22px 28px 0; }
+.gestao-index-source label { font-size: 12px; font-weight: 700; }
+.gestao-index-source select { min-height: 44px; width: 100%; padding: 9px 12px; border: 1px solid var(--g-line); border-radius: 7px; background: var(--g-paper); color: var(--g-ink); font: inherit; }
+.gestao-index-source select:focus-visible { outline: 3px solid var(--g-accent); outline-offset: 3px; }
+.gestao-index-source p { color: var(--g-muted); font-size: 12px; }
+.gestao-documents-list { list-style: none; margin: 0; padding: 4px 28px 20px; max-height: min(60dvh, 520px); overflow-y: auto; }
+.gestao-documents-list li { display: flex; align-items: center; gap: 12px; padding: 14px 0; font-size: 13px; }
+.gestao-documents-list li + li { border-top: 1px solid var(--g-line); }
+.gestao-documents-list svg { flex-shrink: 0; color: var(--g-accent); }
+.gestao-documents-list span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.gestao-documents-list time { flex-shrink: 0; color: var(--g-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 1180px) {
   .gestao-main { padding: 40px 28px; }
@@ -219,6 +228,11 @@
   .gestao-editor { padding: 24px 20px; }
   .gestao-dialog { padding: 24px; }
   .gestao-index-dialog { padding: 0; }
+  .gestao-documents-dialog { padding: 0; }
+  .gestao-index-source { margin-inline: 20px; }
+  .gestao-documents-list { padding-inline: 20px; }
+  .gestao-documents-list li { align-items: flex-start; flex-wrap: wrap; }
+  .gestao-documents-list time { width: 100%; padding-left: 30px; }
   .gestao-index-header { padding: 22px 20px 18px; }
   .gestao-index-note, .gestao-dropzone, .gestao-index-selection, .gestao-index-success { margin-left: 20px; margin-right: 20px; }
   .gestao-index-formats, .gestao-index-dialog > .gestao-error { margin-left: 20px !important; margin-right: 20px !important; }
@@ -256,7 +270,7 @@
 .gestao-sidebar-contexto > svg { flex-shrink: 0; margin-top: 2px; color: var(--chat-accent); }
 .gestao-sidebar-contexto strong { display: block; color: var(--chat-ink); font-size: 12px; }
 .gestao-sidebar-contexto p { margin-top: 7px; font-size: 11px; line-height: 1.75; }
-.gestao .chat-sidebar-base { margin-top: auto; }
+.gestao .chat-sidebar-base { margin-top: 16px; }
 .gestao-main { padding: 0; background: var(--chat-bg); overflow: hidden; }
 .gestao-topbar { border-bottom: 1px solid transparent; }
 .gestao-topbar-account { margin-left: auto; max-width: 220px; overflow: hidden; color: var(--chat-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }

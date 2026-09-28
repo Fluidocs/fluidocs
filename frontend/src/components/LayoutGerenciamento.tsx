@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Database, KeyRound, LayoutGrid, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Database, KeyRound, LayoutGrid, LogOut, PanelLeftClose, PanelLeftOpen, UploadCloud } from 'lucide-react';
 import { AlternarTema } from './AlternarTema';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { CHAVE_GERENCIAMENTO, identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
 import logo from '../assets/fluidocs-logo.png';
+import { ModalIndexacao } from './gerenciamento/ModalIndexacao';
 import './gerenciamento/Gerenciamento.css';
 import './chat/Chat.css';
 
@@ -12,11 +13,15 @@ export function LayoutGerenciamento() {
   const { usuario, estaAutenticado, sair } = useAutenticacaoStore();
   const carregar = useGerenciamentoStore(s => s.carregar);
   const erro = useGerenciamentoStore(s => s.erroLeitura);
+  const fontes = useGerenciamentoStore(s => s.fontes);
+  const registrarDocumentos = useGerenciamentoStore(s => s.registrarDocumentos);
   const { pathname } = useLocation();
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const [navegacaoAberta, setNavegacaoAberta] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
+  const [indexacaoAberta, setIndexacaoAberta] = useState(false);
   const dialogo = useRef<HTMLDialogElement>(null);
   const navegacaoBotao = useRef<HTMLButtonElement>(null);
+  const indexacaoBotao = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!estaAutenticado) return;
@@ -56,6 +61,16 @@ export function LayoutGerenciamento() {
     requestAnimationFrame(() => navegacaoBotao.current?.focus());
   }
 
+  function abrirIndexacao() {
+    if (mobile) setNavegacaoAberta(false);
+    requestAnimationFrame(() => setIndexacaoAberta(true));
+  }
+
+  function fecharIndexacao() {
+    setIndexacaoAberta(false);
+    requestAnimationFrame(() => (mobile ? navegacaoBotao.current : indexacaoBotao.current)?.focus());
+  }
+
   const navegacao = <>
     <div className="chat-sidebar-topo">
       <Link to="/hub" className="chat-brand" aria-label="Fluidocs — escolher módulo"><img src={logo} alt="" /><span>fluidocs<span>.</span></span></Link>
@@ -65,6 +80,7 @@ export function LayoutGerenciamento() {
       <NavLink to="/fontes-de-dados" onClick={() => mobile && fecharNavegacao()}><Database size={17} aria-hidden="true" />Fontes de dados</NavLink>
       <NavLink to="/chaves-api" onClick={() => mobile && fecharNavegacao()}><KeyRound size={17} aria-hidden="true" />Chaves de API</NavLink>
     </nav>
+    <button ref={indexacaoBotao} type="button" className="gestao-nav-action" onClick={abrirIndexacao}><UploadCloud size={17} aria-hidden="true" />Indexar documentos</button>
     <div className="chat-sidebar-base">
       <Link to="/hub"><LayoutGrid size={17} aria-hidden="true" />Trocar módulo</Link>
       <div className="chat-conta">
@@ -90,6 +106,7 @@ export function LayoutGerenciamento() {
           <div className="gestao-scroll"><Outlet key={identificarConta(usuario)} /></div>
         </main>
       </div>
+      {indexacaoAberta && <ModalIndexacao fontes={fontes.filter(fonte => fonte.conta === identificarConta(usuario))} aoFechar={fecharIndexacao} aoIndexar={(fonteId, nomes) => registrarDocumentos(identificarConta(usuario), fonteId, nomes)} />}
     </div>
   );
 }

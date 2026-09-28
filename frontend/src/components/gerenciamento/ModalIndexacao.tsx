@@ -6,16 +6,17 @@ const EXTENSOES = ['xls', 'xlsx', 'doc', 'docx', 'ppt', 'pptx', 'pdf', 'txt', 'z
 const ACCEPT = EXTENSOES.map(extensao => `.${extensao}`).join(',');
 
 interface Props {
-  fonte: FonteDados;
+  fonte?: FonteDados;
+  fontes?: FonteDados[];
   aoFechar: () => void;
-  aoIndexar: (nomes: string[]) => DocumentoIndexado[];
+  aoIndexar: (fonteId: string, nomes: string[]) => DocumentoIndexado[];
 }
 
 function extensao(nome: string) {
   return nome.includes('.') ? nome.split('.').pop()?.toLocaleLowerCase('pt-BR') ?? '' : '';
 }
 
-export function ModalIndexacao({ fonte, aoFechar, aoIndexar }: Props) {
+export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const campo = useRef<HTMLInputElement>(null);
   const tituloId = useId();
@@ -25,6 +26,8 @@ export function ModalIndexacao({ fonte, aoFechar, aoIndexar }: Props) {
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState('');
   const [concluidos, setConcluidos] = useState<string[]>([]);
+  const [fonteId, setFonteId] = useState(fonte?.id ?? '');
+  const fonteSelecionada = fonte ?? fontes.find(item => item.id === fonteId);
 
   useEffect(() => {
     const elemento = dialogo.current;
@@ -52,12 +55,12 @@ export function ModalIndexacao({ fonte, aoFechar, aoIndexar }: Props) {
   }
 
   async function indexar() {
-    if (!arquivos.length) return;
+    if (!arquivos.length || !fonteSelecionada) return;
     setErro('');
     setProcessando(true);
     await new Promise(resolve => window.setTimeout(resolve, 650));
     try {
-      const registrados = aoIndexar(arquivos.map(arquivo => arquivo.name));
+      const registrados = aoIndexar(fonteSelecionada.id, arquivos.map(arquivo => arquivo.name));
       setConcluidos(registrados.map(documento => documento.nome));
       setArquivos([]);
       if (campo.current) campo.current.value = '';
@@ -71,11 +74,12 @@ export function ModalIndexacao({ fonte, aoFechar, aoIndexar }: Props) {
   return (
     <dialog ref={dialogo} className="gestao-dialog gestao-index-dialog" aria-labelledby={tituloId} aria-describedby={descricaoId} onCancel={evento => { evento.preventDefault(); if (!processando) aoFechar(); }}>
       <div className="gestao-index-header">
-        <div><h2 id={tituloId}>Indexar documentos</h2><p id={descricaoId}>Adicione conteúdo à fonte <strong>{fonte.nome}</strong>.</p></div>
+        <div><h2 id={tituloId}>Indexar documentos</h2><p id={descricaoId}>{fonte ? <>Adicione conteúdo à fonte <strong>{fonte.nome}</strong>.</> : 'Escolha a fonte de dados que receberá os documentos.'}</p></div>
         <button className="gestao-icon-button" aria-label="Fechar indexação" disabled={processando} onClick={aoFechar}><X size={20} /></button>
       </div>
 
 
+      {!fonte && <div className="gestao-index-source"><label htmlFor={`${tituloId}-fonte`}>Fonte de dados</label><select id={`${tituloId}-fonte`} value={fonteId} onChange={evento => { setFonteId(evento.target.value); setConcluidos([]); }} disabled={processando}><option value="">Selecione uma fonte</option>{fontes.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}</select>{!fontes.length && <p>Crie uma fonte de dados antes de indexar documentos.</p>}</div>}
       <div className={`gestao-dropzone${arrastando ? ' is-dragging' : ''}`} onDragEnter={evento => { evento.preventDefault(); setArrastando(true); }} onDragOver={evento => evento.preventDefault()} onDragLeave={() => setArrastando(false)} onDrop={soltar}>
         <UploadCloud size={30} strokeWidth={1.6} aria-hidden="true" />
         <strong>Arraste os arquivos para cá</strong>
@@ -89,7 +93,7 @@ export function ModalIndexacao({ fonte, aoFechar, aoIndexar }: Props) {
       {concluidos.length > 0 && <div className="gestao-index-success" role="status"><Check size={18} aria-hidden="true" /><p><strong>{concluidos.length === 1 ? 'Documento adicionado' : 'Documentos adicionados'} à fonte.</strong><span>A indexação real ocorrerá em segundo plano quando a API estiver conectada.</span></p></div>}
       {erro && <p className="gestao-error" role="alert">{erro}</p>}
 
-      <div className="gestao-form-actions"><button type="button" className="gestao-button" disabled={processando} onClick={aoFechar}>{concluidos.length ? 'Concluir' : 'Cancelar'}</button><button type="button" className="gestao-button gestao-button-primary" disabled={!arquivos.length || processando} onClick={indexar}>{processando ? 'Preparando…' : `Indexar${arquivos.length ? ` ${arquivos.length}` : ''}`}</button></div>
+      <div className="gestao-form-actions"><button type="button" className="gestao-button" disabled={processando} onClick={aoFechar}>{concluidos.length ? 'Concluir' : 'Cancelar'}</button><button type="button" className="gestao-button gestao-button-primary" disabled={!fonteSelecionada || !arquivos.length || processando} onClick={indexar}>{processando ? 'Preparando…' : `Indexar${arquivos.length ? ` ${arquivos.length}` : ''}`}</button></div>
     </dialog>
   );
 }
