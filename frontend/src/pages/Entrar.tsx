@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useRef, useState, type FormEvent } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, FileText, Search, ArrowUpRight } from 'lucide-react';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
-import { useDadosStore } from '../store/useDadosStore';
+import { api, type ErroAPI } from '../services/api';
 import { AlternarTema } from '../components/AlternarTema';
 import logo from '../assets/fluidocs-logo.png';
 import './Entrar.css';
@@ -16,21 +16,46 @@ const examples = [
 export function Login() {
   const navigate = useNavigate();
   const entrar = useAutenticacaoStore((state) => state.entrar);
-  const repositorios = useDadosStore((state) => state.repositorios);
+  const estaAutenticado = useAutenticacaoStore((state) => state.estaAutenticado);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [example, setExample] = useState(0);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState('');
+  const enviando = useRef(false);
 
-  function accessExample(address: string) {
-    entrar({ id: '1', nome: 'João Silva', email: address, funcao: 'admin', gruposAcesso: ['admin', 'rh', 'ti', 'geral'] });
-    navigate(repositorios.length > 0 ? '/busca' : '/repositorios');
+  function accessExample() {
+    if (enviando.current) return;
+    entrar({ id: 'demo', nome: 'Conta de demonstração', email: 'demo@example.com' });
+    navigate('/hub', { replace: true });
   }
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    accessExample(email);
+    if (enviando.current) return;
+    enviando.current = true;
+    setCarregando(true);
+    setErro('');
+    try {
+      const token = await api.autenticar(email, password);
+      const usuario = await api.obterUsuarioAtual(token.access_token);
+      entrar(usuario, token.access_token);
+      navigate('/hub', { replace: true });
+    } catch (falha) {
+      const erroAPI = falha as ErroAPI;
+      setErro(erroAPI?.status === 401
+        ? 'E-mail ou senha inválidos. Confira seus dados e tente novamente.'
+        : erroAPI?.status === 0
+          ? 'Não foi possível conectar ao servidor. Tente novamente em instantes.'
+          : 'Não foi possível entrar no Fluidocs. Tente novamente em instantes.');
+    } finally {
+      enviando.current = false;
+      setCarregando(false);
+    }
   }
+
+  if (estaAutenticado) return <Navigate to="/hub" replace />;
 
   return (
     <div className="login-page">
@@ -43,17 +68,19 @@ export function Login() {
           <div className="login-form-content">
             <h1 id="login-title">Seu conhecimento.<br /><span>Seu próximo passo.</span></h1>
             <p className="login-intro">Entre para continuar de onde você parou.</p>
-            <form onSubmit={handleSubmit} className="login-form">
-              <div className="login-field"><label htmlFor="login-email">E-mail</label><input id="login-email" name="email" type="email" autoComplete="username" placeholder="voce@exemplo.com" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
+            <form onSubmit={handleSubmit} className="login-form" aria-busy={carregando}>
+              <div className="login-field"><label htmlFor="login-email">E-mail</label><input id="login-email" name="email" type="email" autoComplete="username" placeholder="voce@exemplo.com" required disabled={carregando} value={email} onChange={(event) => { setEmail(event.target.value); setErro(''); }} /></div>
               <div className="login-field">
                 <div className="login-label-row"><label htmlFor="login-password">Senha</label><button type="button" className="login-text-button" aria-expanded={showHelp} aria-controls="login-recovery" onClick={() => setShowHelp(!showHelp)}>Esqueceu a senha?</button></div>
-                <div className="login-password"><input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Digite sua senha" required value={password} onChange={(event) => setPassword(event.target.value)} /><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
-                {showHelp && <p id="login-recovery" className="login-help" role="status">A recuperação de senha ainda não está disponível. Continue sem senha pelo botão abaixo.</p>}
+                <div className="login-password"><input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Digite sua senha" required disabled={carregando} value={password} onChange={(event) => { setPassword(event.target.value); setErro(''); }} /><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
+                {showHelp && <p id="login-recovery" className="login-help" role="status">A recuperação de senha ainda não está disponível. O acesso sem senha abaixo abre apenas uma demonstração local.</p>}
               </div>
-              <button type="submit" className="login-submit">Entrar no Fluidocs <ArrowRight size={19} aria-hidden="true" /></button>
+              {erro && <p className="login-error" role="alert">{erro}</p>}
+              <button type="submit" className="login-submit" disabled={carregando}>{carregando ? 'Entrando…' : 'Entrar no Fluidocs'} <ArrowRight size={19} aria-hidden="true" /></button>
             </form>
             <div className="login-divider"><span>ou conheça primeiro</span></div>
-            <button type="button" className="login-demo" onClick={() => accessExample('demo@example.com')}>Continuar sem senha <ArrowUpRight size={18} aria-hidden="true" /></button>
+            <button type="button" className="login-demo" disabled={carregando} onClick={accessExample}>Continuar em demonstração <ArrowUpRight size={18} aria-hidden="true" /></button>
+            <p className="login-demo-notice">A demonstração usa dados fictícios neste navegador.</p>
             <p className="login-signup">Primeira vez aqui? <Link to="/cadastrar">Criar uma conta</Link></p>
           </div>
         </section>

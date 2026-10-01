@@ -1,0 +1,36 @@
+.cadastro-page .login-form-panel {
+  padding: 28px 0;
+}
+
+.cadastro-page .login-form {
+  gap: 18px;
+}
+
+.cadastro-page .login-form-content h1 {
+  letter-spacing: -0.03em;
+}
+
+.cadastro-field-help,
+.cadastro-demo-notice {
+  color: var(--login-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.cadastro-demo-notice {
+  margin-top: 16px;
+}
+
+.cadastro-page .login-signup {
+  margin-bottom: 0;
+}
+
+@media (max-width: 800px) {
+  .cadastro-page .login-form-panel {
+    padding: 28px 0 36px;
+  }
+
+  .cadastro-page .login-field input {
+    font-size: 16px;
+  }
+}

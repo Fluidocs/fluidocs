@@ -32,6 +32,14 @@ export default defineConfig(({mode}) => {
         interval: 100,
       },
       proxy: {
+        '/auth': {
+          target: alvoProxyApi,
+          changeOrigin: true,
+        },
+        '/me': {
+          target: alvoProxyApi,
+          changeOrigin: true,
+        },
         '/api': {
           target: alvoProxyApi,
           changeOrigin: true,

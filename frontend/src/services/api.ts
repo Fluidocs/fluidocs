@@ -1,7 +1,27 @@
 import { DadosArquivo } from '../tipos';
+import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
 
 // Em dev, prefira VITE_API_URL=/api (proxy do Vite). Em producao, use a URL absoluta da API.
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || '/api';
+// O router registra /auth e /me na raiz; /api é reservado às rotas públicas.
+const AUTH_BASE_URL = API_BASE_URL.replace(/\/$/, '').replace(/\/api$/, '');
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface DadosCadastro {
+  nome: string;
+  email: string;
+  senha: string;
+}
+
+interface UsuarioOpenAPI {
+  id: number;
+  nome: string;
+  email: string;
+}
 
 export interface RespostaPesquisa {
   total: number;
@@ -35,6 +55,7 @@ export interface RepositorioBackend {
 }
 
 export interface ErroAPI {
+  status?: number;
   erro: string;
   codigo?: string;
   mensagem: string;
@@ -311,11 +332,18 @@ export function normalizarRespostaAgente(resposta: RespostaAgenteOpenAPI): Mensa
 
 async function executarRequisicao<T>(
   caminho: string,
-  opcoes?: RequestInit
+  opcoes?: RequestInit,
+  autenticacao?: { baseUrl: string; tokenAcesso: string | null },
 ): Promise<T> {
-  const url = `${API_BASE_URL}${caminho}`;
+  const url = `${autenticacao?.baseUrl ?? API_BASE_URL}${caminho}`;
+  const tokenAcesso = autenticacao
+    ? autenticacao.tokenAcesso
+    : useAutenticacaoStore.getState().tokenAcesso;
 
   const cabecalhos = new Headers(opcoes?.headers);
+  if (tokenAcesso && !cabecalhos.has('Authorization')) {
+    cabecalhos.set('Authorization', `Bearer ${tokenAcesso}`);
+  }
   if (!cabecalhos.has('Content-Type') && !(opcoes?.body instanceof FormData)) {
     cabecalhos.set('Content-Type', 'application/json');
   }
@@ -329,10 +357,15 @@ async function executarRequisicao<T>(
       credentials: 'include',
     });
   } catch {
-    throw normalizarErroAPI(0, null);
+    throw { ...normalizarErroAPI(0, null), status: 0 };
   }
 
   if (!resposta.ok) {
+    // Uma resposta atrasada de outra sessão não deve encerrar o login atual.
+    if (resposta.status === 401 && tokenAcesso &&
+        useAutenticacaoStore.getState().tokenAcesso === tokenAcesso) {
+      useAutenticacaoStore.getState().sair();
+    }
     const textoResposta = await resposta.text();
     let corpoErro: unknown = null;
 
@@ -344,7 +377,7 @@ async function executarRequisicao<T>(
       }
     }
 
-    throw normalizarErroAPI(resposta.status, corpoErro);
+    throw { ...normalizarErroAPI(resposta.status, corpoErro), status: resposta.status };
   }
 
   if (resposta.status === 204) {
@@ -355,6 +388,38 @@ async function executarRequisicao<T>(
 }
 
 export const api = {
+  cadastrar: async (dados: DadosCadastro): Promise<Pick<Usuario, 'nome' | 'email'>> => {
+    const resposta = await executarRequisicao<BaseResponse<Pick<Usuario, 'nome' | 'email'>>>(
+      '/auth/cadastrar',
+      {
+        method: 'POST',
+        body: JSON.stringify({ nome: dados.nome.trim(), email: dados.email.trim(), senha: dados.senha }),
+      },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: null },
+    );
+    return resposta.dados;
+  },
+
+  autenticar: async (email: string, senha: string): Promise<TokenResponse> => {
+    return executarRequisicao<TokenResponse>('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ username: email.trim(), password: senha }),
+    }, { baseUrl: AUTH_BASE_URL, tokenAcesso: null });
+  },
+
+  obterUsuarioAtual: async (tokenAcesso: string): Promise<Usuario> => {
+    const resposta = await executarRequisicao<BaseResponse<UsuarioOpenAPI>>('/me', undefined, {
+      baseUrl: AUTH_BASE_URL,
+      tokenAcesso,
+    });
+    return {
+      id: String(resposta.dados.id),
+      nome: resposta.dados.nome,
+      email: resposta.dados.email,
+    };
+  },
+
   pesquisarDocumentos: async (
     termo: string,
     pagina: number,
