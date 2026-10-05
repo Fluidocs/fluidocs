@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, KeyRound, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
-import { identificarConta, useGerenciamentoStore, type ChaveApi } from '../store/useGerenciamentoStore';
+import { api, extrairMensagemErro, type ChaveApiBackend } from '../services/api';
 import { EditorCadastro } from '../components/gerenciamento/EditorCadastro';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
-
-const data = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
 function ChaveCriada({ nome, valor, aoFechar }: { nome: string; valor: string; aoFechar: () => void }) {
   const titulo = useRef<HTMLHeadingElement>(null);
@@ -16,37 +14,111 @@ function ChaveCriada({ nome, valor, aoFechar }: { nome: string; valor: string; a
 }
 
 export function ChavesApi() {
-  const usuario = useAutenticacaoStore(s => s.usuario)!;
-  const conta = identificarConta(usuario);
-  const { chaves, criarChave, renomearChave, excluirChave, erroLeitura } = useGerenciamentoStore(s => s);
+  const tokenAcesso = useAutenticacaoStore(s => s.tokenAcesso);
+  // Uma nova sessão descarta a lista e qualquer segredo ainda exibido.
+  return tokenAcesso ? <GerenciarChaves key={tokenAcesso} tokenAcesso={tokenAcesso} /> : null;
+}
+
+function GerenciarChaves({ tokenAcesso }: { tokenAcesso: string }) {
+  const [chaves, setChaves] = useState<ChaveApiBackend[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroLeitura, setErroLeitura] = useState('');
+  const [tentativa, setTentativa] = useState(0);
   const [busca, setBusca] = useState('');
-  const [editor, setEditor] = useState<ChaveApi | 'nova' | null>(null);
+  const [editor, setEditor] = useState<ChaveApiBackend | 'nova' | null>(null);
   const [criada, setCriada] = useState<{ nome: string; valor: string } | null>(null);
-  const [exclusao, setExclusao] = useState<ChaveApi | null>(null);
+  const [exclusao, setExclusao] = useState<ChaveApiBackend | null>(null);
   const [mensagem, setMensagem] = useState('');
   const criar = useRef<HTMLButtonElement>(null);
   const origemEditor = useRef<HTMLButtonElement | null>(null);
-  const minhas = chaves.filter(c => c.conta === conta);
+  const ativo = useRef(false);
+
+  useEffect(() => {
+    ativo.current = true;
+    return () => { ativo.current = false; };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+    setCarregando(true);
+    setErroLeitura('');
+    api.listarChavesApi()
+      .then(resultado => { if (!cancelado) setChaves(resultado); })
+      .catch(erro => {
+        if (!cancelado) setErroLeitura(extrairMensagemErro(erro, 'Não foi possível carregar suas chaves. Tente novamente.'));
+      })
+      .finally(() => { if (!cancelado) setCarregando(false); });
+    return () => { cancelado = true; };
+  }, [tentativa]);
+
+  function sessaoAtual() {
+    return ativo.current && useAutenticacaoStore.getState().tokenAcesso === tokenAcesso;
+  }
+
   const termo = busca.trim().toLocaleLowerCase('pt-BR');
-  const visiveis = minhas.filter(c => c.nome.toLocaleLowerCase('pt-BR').includes(termo));
+  const visiveis = chaves.filter(c => c.nome.toLocaleLowerCase('pt-BR').includes(termo));
   const ocupado = !!editor || !!criada;
+  const bloqueado = ocupado || !!exclusao || carregando || !!erroLeitura;
   function fecharEditor() { setEditor(null); requestAnimationFrame(() => origemEditor.current?.focus()); }
-  function abrirEditor(chave: ChaveApi | 'nova', botao: HTMLButtonElement) { origemEditor.current = botao; setMensagem(''); setEditor(chave); }
+  function abrirEditor(chave: ChaveApiBackend | 'nova', botao: HTMLButtonElement) { origemEditor.current = botao; setMensagem(''); setEditor(chave); }
+
+  async function salvar({ nome, descricao }: { nome: string; descricao: string }) {
+    if (editor === 'nova') {
+      const resultado = await api.criarChaveApi({ nome, descricao });
+      if (!sessaoAtual()) return;
+      const { token, ...registro } = resultado;
+      setChaves(anteriores => [...anteriores, registro]);
+      setCriada({ nome: registro.nome, valor: token });
+      setEditor(null);
+      setMensagem('Chave criada. Copie o valor antes de concluir.');
+    } else if (editor) {
+      const resultado = await api.renomearChaveApi(editor.id, nome);
+      if (!sessaoAtual()) return;
+      setChaves(anteriores => anteriores.map(chave => chave.id === resultado.id ? resultado : chave));
+      setMensagem('Nome da chave atualizado.');
+      fecharEditor();
+    }
+    setBusca('');
+  }
+
+  async function excluir() {
+    if (!exclusao) return;
+    await api.excluirChaveApi(exclusao.id);
+    if (!sessaoAtual()) return;
+    setChaves(anteriores => anteriores.filter(chave => chave.id !== exclusao.id));
+    setMensagem(`Chave “${exclusao.nome}” excluída.`);
+    setExclusao(null);
+    requestAnimationFrame(() => criar.current?.focus());
+  }
 
   return (
     <div className="gestao-page">
-      <div className="gestao-page-heading"><div><h1>Chaves de API</h1><p>Identifique as chaves usadas pelas suas integrações.</p></div><button ref={criar} className="gestao-button gestao-button-primary" disabled={!!erroLeitura || ocupado} onClick={e => abrirEditor('nova', e.currentTarget)}><Plus size={18} aria-hidden="true" />Nova chave</button></div>
+      <div className="gestao-page-heading"><div><h1>Chaves de API</h1><p>Identifique as chaves usadas pelas suas integrações.</p></div><button ref={criar} className="gestao-button gestao-button-primary" disabled={bloqueado} onClick={e => abrirEditor('nova', e.currentTarget)}><Plus size={18} aria-hidden="true" />Nova chave</button></div>
       <p className="gestao-context">Crie e gerencie as chaves associadas à sua conta.</p>
       <div className="gestao-feedback" role="status" aria-live="polite">{mensagem}</div>
       <div className={`gestao-workspace${ocupado ? ' gestao-workspace-editing' : ''}`}>
-        <section className="gestao-list" aria-label="Chaves de API cadastradas">
-          <div className="gestao-toolbar"><h2>Suas chaves <span>{minhas.length}</span></h2><div className="gestao-search"><Search size={17} aria-hidden="true" /><input aria-label="Buscar chaves de API" placeholder="Buscar chaves" value={busca} onChange={e => setBusca(e.target.value)} type="search" /></div></div>
-          {erroLeitura ? <p className="gestao-empty-message">Não foi possível carregar suas chaves. Tente novamente.</p> : !minhas.length ? <div className="gestao-empty"><KeyRound size={32} strokeWidth={1.5} aria-hidden="true" /><h3>Uma chave para cada integração</h3><p>Crie uma chave para identificar sua integração. O valor completo aparece somente uma vez.</p><button className="gestao-button" disabled={ocupado} onClick={e => abrirEditor('nova', e.currentTarget)}><Plus size={17} aria-hidden="true" />Criar primeira chave</button></div> : !visiveis.length ? <div className="gestao-empty"><Search size={28} aria-hidden="true" /><h3>Nenhuma chave encontrada</h3><p>Tente buscar por outro nome.</p><button className="gestao-button" onClick={() => setBusca('')}>Limpar busca</button></div> : <ul className="gestao-records">{visiveis.map(chave => <li key={chave.id} className="gestao-record"><KeyRound className="gestao-record-icon" size={21} aria-hidden="true" /><div className="gestao-record-content"><h3>{chave.nome}</h3><code className="gestao-key-mask" aria-label={`Chave terminada em ${chave.final}`}>fd_demo_••••••••{chave.final}</code><span className="gestao-record-meta">Criada em <time dateTime={chave.criadoEm}>{data.format(new Date(chave.criadoEm))}</time></span></div><div className="gestao-record-actions"><button className="gestao-icon-button" disabled={ocupado} aria-label={`Renomear chave ${chave.nome}`} onClick={e => abrirEditor(chave, e.currentTarget)}><Pencil size={17} /></button><button className="gestao-icon-button gestao-delete" disabled={ocupado} aria-label={`Excluir chave ${chave.nome}`} onClick={() => setExclusao(chave)}><Trash2 size={17} /></button></div></li>)}</ul>}
+        <section className="gestao-list" aria-label="Chaves de API cadastradas" aria-busy={carregando}>
+          <div className="gestao-toolbar"><h2>Suas chaves <span>{carregando || erroLeitura ? '—' : chaves.length}</span></h2><div className="gestao-search"><Search size={17} aria-hidden="true" /><input aria-label="Buscar chaves de API" placeholder="Buscar chaves" value={busca} disabled={carregando || !!erroLeitura} onChange={e => setBusca(e.target.value)} type="search" /></div></div>
+          {carregando ? <p className="gestao-empty-message" role="status">Carregando suas chaves…</p> : erroLeitura ? (
+            <div className="gestao-empty"><h3>Não foi possível carregar suas chaves</h3><p role="alert">{erroLeitura}</p><button className="gestao-button" onClick={() => setTentativa(valor => valor + 1)}>Tentar novamente</button></div>
+          ) : !chaves.length ? (
+            <div className="gestao-empty"><KeyRound size={32} strokeWidth={1.5} aria-hidden="true" /><h3>Uma chave para cada integração</h3><p>Crie uma chave para identificar sua integração. O valor completo aparece somente uma vez.</p><button className="gestao-button" disabled={bloqueado} onClick={e => abrirEditor('nova', e.currentTarget)}><Plus size={17} aria-hidden="true" />Criar primeira chave</button></div>
+          ) : !visiveis.length ? (
+            <div className="gestao-empty"><Search size={28} aria-hidden="true" /><h3>Nenhuma chave encontrada</h3><p>Tente buscar por outro nome.</p><button className="gestao-button" onClick={() => setBusca('')}>Limpar busca</button></div>
+          ) : (
+            <ul className="gestao-records">{visiveis.map(chave => (
+              <li key={chave.id} className="gestao-record">
+                <KeyRound className="gestao-record-icon" size={21} aria-hidden="true" />
+                <div className="gestao-record-content"><h3>{chave.nome}</h3>{chave.descricao && <p>{chave.descricao}</p>}<span className="gestao-record-meta">Identificação: {chave.id}</span></div>
+                <div className="gestao-record-actions"><button className="gestao-icon-button" disabled={bloqueado} aria-label={`Renomear chave ${chave.nome}`} onClick={e => abrirEditor(chave, e.currentTarget)}><Pencil size={17} /></button><button className="gestao-icon-button gestao-delete" disabled={bloqueado} aria-label={`Excluir chave ${chave.nome}`} onClick={() => { setMensagem(''); setExclusao(chave); }}><Trash2 size={17} /></button></div>
+              </li>
+            ))}</ul>
+          )}
         </section>
-        {editor && <EditorCadastro key={editor === 'nova' ? 'nova' : editor.id} titulo={editor === 'nova' ? 'Nova chave de API' : 'Renomear chave de API'} ajuda={editor === 'nova' ? 'Dê um nome à integração para reconhecer esta chave depois.' : 'A alteração do nome preserva a identificação desta chave.'} nomeInicial={editor === 'nova' ? '' : editor.nome} acao={editor === 'nova' ? 'Criar chave' : 'Salvar nome'} aoFechar={fecharEditor} aoSalvar={({ nome }) => { if (editor === 'nova') { const resultado = criarChave(conta, nome); setCriada({ nome: resultado.registro.nome, valor: resultado.valor }); setEditor(null); setMensagem('Chave criada. Copie o valor antes de concluir.'); } else { renomearChave(conta, editor.id, nome); setMensagem('Nome da chave atualizado.'); fecharEditor(); } setBusca(''); }} />}
+        {editor && <EditorCadastro key={editor === 'nova' ? 'nova' : editor.id} titulo={editor === 'nova' ? 'Nova chave de API' : 'Renomear chave de API'} ajuda={editor === 'nova' ? 'Dê um nome à integração para reconhecer esta chave depois.' : 'A alteração do nome preserva a identificação desta chave.'} nomeInicial={editor === 'nova' ? '' : editor.nome} limiteNome={60} limiteDescricao={255} comDescricao={editor === 'nova'} placeholderNome="Ex.: Integração do portal" placeholderDescricao="Ex.: Acesso usado pelo portal interno." acao={editor === 'nova' ? 'Criar chave' : 'Salvar nome'} aoFechar={fecharEditor} aoSalvar={salvar} />}
         {criada && <ChaveCriada nome={criada.nome} valor={criada.valor} aoFechar={() => { setCriada(null); setMensagem('Chave cadastrada. Apenas sua identificação permanece salva.'); requestAnimationFrame(() => criar.current?.focus()); }} />}
       </div>
-      {exclusao && <ConfirmarExclusao tipo="chave" nome={exclusao.nome} aoCancelar={() => setExclusao(null)} aoConfirmar={() => { excluirChave(conta, exclusao.id); setMensagem(`Chave “${exclusao.nome}” excluída.`); setExclusao(null); criar.current?.focus(); }} />}
+      {exclusao && <ConfirmarExclusao tipo="chave" nome={exclusao.nome} aoCancelar={() => setExclusao(null)} aoConfirmar={excluir} />}
     </div>
   );
 }

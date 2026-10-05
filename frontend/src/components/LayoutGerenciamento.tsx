@@ -102,7 +102,7 @@ export function LayoutGerenciamento() {
             <div className="chat-header-inicio"><button ref={navegacaoBotao} className="chat-icon" aria-label={navegacaoAberta ? 'Recolher navegação' : 'Abrir navegação'} aria-expanded={navegacaoAberta} aria-controls="gestao-sidebar" onClick={() => setNavegacaoAberta(!navegacaoAberta)}><PanelLeftOpen size={20} /></button><span className="chat-header-nome">Fluidocs<span>Gerenciamento</span></span></div>
             <span className="gestao-topbar-account" title={usuario.email}>{usuario.nome}</span>
           </header>
-          {erro && <div className="gestao-alert" role="alert"><p>{erro}</p><button className="gestao-button" onClick={carregar}>Tentar novamente</button></div>}
+          {erro && pathname !== '/chaves-api' && <div className="gestao-alert" role="alert"><p>{erro}</p><button className="gestao-button" onClick={carregar}>Tentar novamente</button></div>}
           <div className="gestao-scroll"><Outlet key={identificarConta(usuario)} /></div>
         </main>
       </div>

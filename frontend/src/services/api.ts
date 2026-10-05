@@ -17,6 +17,21 @@ export interface DadosCadastro {
   senha: string;
 }
 
+export interface ChaveApiBackend {
+  id: number;
+  nome: string;
+  descricao: string | null;
+}
+
+export interface ChaveApiCriada extends ChaveApiBackend {
+  token: string;
+}
+
+export interface DadosChaveApi {
+  nome: string;
+  descricao?: string | null;
+}
+
 interface UsuarioOpenAPI {
   id: number;
   nome: string;
@@ -205,7 +220,10 @@ function normalizarErroAPI(status: number, corpo: unknown): ErroAPI {
   };
 }
 
-export function extrairMensagemErro(erro: unknown): string {
+export function extrairMensagemErro(
+  erro: unknown,
+  mensagemPadrao = 'Nao foi possivel criar a fonte temporaria. Tente novamente.',
+): string {
   if (erro && typeof erro === 'object' && 'mensagem' in erro) {
     const mensagem = (erro as ErroAPI).mensagem;
     if (typeof mensagem === 'string' && mensagem.trim()) {
@@ -221,7 +239,23 @@ export function extrairMensagemErro(erro: unknown): string {
     return erro.message;
   }
 
-  return 'Nao foi possivel criar a fonte temporaria. Tente novamente.';
+  return mensagemPadrao;
+}
+
+function validarDadosChaveApi(dados: DadosChaveApi): DadosChaveApi {
+  const nome = dados.nome.trim();
+  if (!nome) throw new Error('Informe um nome para a chave.');
+  if (nome.length > 60) throw new Error('Use um nome com até 60 caracteres.');
+  const descricao = dados.descricao?.trim() || null;
+  if (descricao && descricao.length > 255) {
+    throw new Error('Use uma descrição com até 255 caracteres.');
+  }
+  return { nome, ...(dados.descricao !== undefined ? { descricao } : {}) };
+}
+
+function metadadosChaveApi(chave: ChaveApiBackend): ChaveApiBackend {
+  // O token retornado na criação nunca deve entrar na listagem ou no armazenamento.
+  return { id: chave.id, nome: chave.nome, descricao: chave.descricao };
 }
 
 export function normalizarRepositorioBackend(dados: RepositorioOpenAPI): RepositorioBackend {
@@ -418,6 +452,39 @@ export const api = {
       nome: resposta.dados.nome,
       email: resposta.dados.email,
     };
+  },
+
+  listarChavesApi: async (): Promise<ChaveApiBackend[]> => {
+    const resposta = await executarRequisicao<BaseResponse<ChaveApiBackend[]>>(
+      '/chaves-api', undefined,
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados.map(metadadosChaveApi);
+  },
+
+  criarChaveApi: async (dados: DadosChaveApi): Promise<ChaveApiCriada> => {
+    const resposta = await executarRequisicao<BaseResponse<ChaveApiCriada>>(
+      '/chaves-api',
+      { method: 'POST', body: JSON.stringify(validarDadosChaveApi(dados)) },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return { ...metadadosChaveApi(resposta.dados), token: resposta.dados.token };
+  },
+
+  renomearChaveApi: async (id: number, nome: string): Promise<ChaveApiBackend> => {
+    const resposta = await executarRequisicao<BaseResponse<ChaveApiBackend>>(
+      `/chaves-api/${id}`,
+      { method: 'PATCH', body: JSON.stringify(validarDadosChaveApi({ nome })) },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return metadadosChaveApi(resposta.dados);
+  },
+
+  excluirChaveApi: async (id: number): Promise<void> => {
+    await executarRequisicao<BaseResponse<ChaveApiBackend>>(
+      `/chaves-api/${id}`, { method: 'DELETE' },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
   },
 
   pesquisarDocumentos: async (

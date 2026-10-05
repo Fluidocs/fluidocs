@@ -40,6 +40,14 @@ export default defineConfig(({mode}) => {
           target: alvoProxyApi,
           changeOrigin: true,
         },
+        '/chaves-api': {
+          target: alvoProxyApi,
+          changeOrigin: true,
+          // A rota homônima do painel precisa continuar sendo servida pelo Vite.
+          bypass(req) {
+            if (req.headers.accept?.includes('text/html')) return '/index.html';
+          },
+        },
         '/api': {
           target: alvoProxyApi,
           changeOrigin: true,
