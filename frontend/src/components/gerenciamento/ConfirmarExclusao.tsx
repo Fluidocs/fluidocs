@@ -38,6 +38,7 @@ export function ConfirmarExclusao({ nome, tipo, aoCancelar, aoConfirmar }: Props
       <p id="excluir-descricao">O cadastro <strong>{nome}</strong> será removido. Esta ação não pode ser desfeita.</p>
       {tipo === 'conversa' && <p className="gestao-muted">As mensagens e as evidências salvas nesta conversa também serão removidas.</p>}
       {tipo === 'chave' && <p className="gestao-muted">As integrações que usam esta chave perderão o acesso à API.</p>}
+      {tipo === 'fonte' && <p className="gestao-muted">Os documentos associados a esta fonte também serão removidos das buscas.</p>}
       {erro && <p className="gestao-error" role="alert">{erro}</p>}
       <div className="gestao-form-actions"><button className="gestao-button" autoFocus disabled={excluindo} onClick={aoCancelar}>Cancelar</button><button className="gestao-button gestao-button-danger" disabled={excluindo} onClick={confirmar}>{excluindo ? 'Excluindo…' : `Excluir ${tipo}`}</button></div>
     </dialog>

@@ -32,6 +32,19 @@ export interface DadosChaveApi {
   descricao?: string | null;
 }
 
+export interface FonteDadosBackend {
+  id: number;
+  nome: string;
+  descricao: string;
+  data_criacao: string;
+  data_atualizacao: string;
+}
+
+export interface DadosFonteDados {
+  nome: string;
+  descricao: string;
+}
+
 interface UsuarioOpenAPI {
   id: number;
   nome: string;
@@ -256,6 +269,16 @@ function validarDadosChaveApi(dados: DadosChaveApi): DadosChaveApi {
 function metadadosChaveApi(chave: ChaveApiBackend): ChaveApiBackend {
   // O token retornado na criação nunca deve entrar na listagem ou no armazenamento.
   return { id: chave.id, nome: chave.nome, descricao: chave.descricao };
+}
+
+function validarDadosFonte(dados: DadosFonteDados): DadosFonteDados {
+  const nome = dados.nome.trim();
+  const descricao = dados.descricao.trim();
+  if (!nome) throw new Error('Informe um nome para a fonte.');
+  if (nome.length > 100) throw new Error('Use um nome com até 100 caracteres.');
+  if (descricao.length > 250) throw new Error('Use uma descrição com até 250 caracteres.');
+  // A descrição vazia precisa ser string: o modelo e a resposta não aceitam null.
+  return { nome, descricao };
 }
 
 export function normalizarRepositorioBackend(dados: RepositorioOpenAPI): RepositorioBackend {
@@ -483,6 +506,39 @@ export const api = {
   excluirChaveApi: async (id: number): Promise<void> => {
     await executarRequisicao<BaseResponse<ChaveApiBackend>>(
       `/chaves-api/${id}`, { method: 'DELETE' },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+  },
+
+  listarFontesDados: async (): Promise<FonteDadosBackend[]> => {
+    const resposta = await executarRequisicao<BaseResponse<FonteDadosBackend[]>>(
+      '/fontes-dados/', undefined,
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados;
+  },
+
+  criarFonteDados: async (dados: DadosFonteDados): Promise<FonteDadosBackend> => {
+    const resposta = await executarRequisicao<BaseResponse<FonteDadosBackend>>(
+      '/fontes-dados/',
+      { method: 'POST', body: JSON.stringify(validarDadosFonte(dados)) },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados;
+  },
+
+  atualizarFonteDados: async (id: number, dados: DadosFonteDados): Promise<FonteDadosBackend> => {
+    const resposta = await executarRequisicao<BaseResponse<FonteDadosBackend>>(
+      `/fontes-dados/${id}`,
+      { method: 'PATCH', body: JSON.stringify(validarDadosFonte(dados)) },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados;
+  },
+
+  excluirFonteDados: async (id: number): Promise<void> => {
+    await executarRequisicao<BaseResponse<FonteDadosBackend>>(
+      `/fontes-dados/${id}`, { method: 'DELETE' },
       { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
     );
   },

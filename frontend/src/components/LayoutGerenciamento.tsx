@@ -3,35 +3,24 @@ import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Database, KeyRound, LayoutGrid, LogOut, PanelLeftClose, PanelLeftOpen, UploadCloud } from 'lucide-react';
 import { AlternarTema } from './AlternarTema';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
-import { CHAVE_GERENCIAMENTO, identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
+import { identificarConta } from '../store/useGerenciamentoStore';
+import { useFontesDadosStore } from '../store/useFontesDadosStore';
 import logo from '../assets/fluidocs-logo.png';
-import { ModalIndexacao } from './gerenciamento/ModalIndexacao';
 import './gerenciamento/Gerenciamento.css';
 import './chat/Chat.css';
 
 export function LayoutGerenciamento() {
-  const { usuario, estaAutenticado, sair } = useAutenticacaoStore();
-  const carregar = useGerenciamentoStore(s => s.carregar);
-  const erro = useGerenciamentoStore(s => s.erroLeitura);
-  const fontes = useGerenciamentoStore(s => s.fontes);
-  const registrarDocumentos = useGerenciamentoStore(s => s.registrarDocumentos);
+  const { usuario, tokenAcesso, estaAutenticado, sair } = useAutenticacaoStore();
+  const carregar = useFontesDadosStore(s => s.carregar);
   const { pathname } = useLocation();
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const [navegacaoAberta, setNavegacaoAberta] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
-  const [indexacaoAberta, setIndexacaoAberta] = useState(false);
   const dialogo = useRef<HTMLDialogElement>(null);
   const navegacaoBotao = useRef<HTMLButtonElement>(null);
-  const indexacaoBotao = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!estaAutenticado) return;
-    carregar();
-    const sincronizar = (evento: StorageEvent) => {
-      if (evento.key === CHAVE_GERENCIAMENTO || evento.key === null) carregar();
-    };
-    window.addEventListener('storage', sincronizar);
-    return () => window.removeEventListener('storage', sincronizar);
-  }, [carregar, estaAutenticado]);
+    if (estaAutenticado && tokenAcesso && pathname !== '/chaves-api') void carregar();
+  }, [carregar, estaAutenticado, tokenAcesso, pathname]);
 
   useEffect(() => {
     const anterior = document.title;
@@ -61,16 +50,6 @@ export function LayoutGerenciamento() {
     requestAnimationFrame(() => navegacaoBotao.current?.focus());
   }
 
-  function abrirIndexacao() {
-    if (mobile) setNavegacaoAberta(false);
-    requestAnimationFrame(() => setIndexacaoAberta(true));
-  }
-
-  function fecharIndexacao() {
-    setIndexacaoAberta(false);
-    requestAnimationFrame(() => (mobile ? navegacaoBotao.current : indexacaoBotao.current)?.focus());
-  }
-
   const navegacao = <>
     <div className="chat-sidebar-topo">
       <Link to="/hub" className="chat-brand" aria-label="Fluidocs — escolher módulo"><img src={logo} alt="" /><span>fluidocs<span>.</span></span></Link>
@@ -80,7 +59,7 @@ export function LayoutGerenciamento() {
       <NavLink to="/fontes-de-dados" onClick={() => mobile && fecharNavegacao()}><Database size={17} aria-hidden="true" />Fontes de dados</NavLink>
       <NavLink to="/chaves-api" onClick={() => mobile && fecharNavegacao()}><KeyRound size={17} aria-hidden="true" />Chaves de API</NavLink>
     </nav>
-    <button ref={indexacaoBotao} type="button" className="gestao-nav-action" onClick={abrirIndexacao}><UploadCloud size={17} aria-hidden="true" />Indexar documentos</button>
+    <button type="button" className="gestao-nav-action" disabled title="Envio de documentos indisponível"><UploadCloud size={17} aria-hidden="true" />Indexar documentos</button>
     <div className="chat-sidebar-base">
       <Link to="/hub"><LayoutGrid size={17} aria-hidden="true" />Trocar módulo</Link>
       <div className="chat-conta">
@@ -102,11 +81,9 @@ export function LayoutGerenciamento() {
             <div className="chat-header-inicio"><button ref={navegacaoBotao} className="chat-icon" aria-label={navegacaoAberta ? 'Recolher navegação' : 'Abrir navegação'} aria-expanded={navegacaoAberta} aria-controls="gestao-sidebar" onClick={() => setNavegacaoAberta(!navegacaoAberta)}><PanelLeftOpen size={20} /></button><span className="chat-header-nome">Fluidocs<span>Gerenciamento</span></span></div>
             <span className="gestao-topbar-account" title={usuario.email}>{usuario.nome}</span>
           </header>
-          {erro && pathname !== '/chaves-api' && <div className="gestao-alert" role="alert"><p>{erro}</p><button className="gestao-button" onClick={carregar}>Tentar novamente</button></div>}
-          <div className="gestao-scroll"><Outlet key={identificarConta(usuario)} /></div>
+          <div className="gestao-scroll"><Outlet key={`${identificarConta(usuario)}:${tokenAcesso}`} /></div>
         </main>
       </div>
-      {indexacaoAberta && <ModalIndexacao fontes={fontes.filter(fonte => fonte.conta === identificarConta(usuario))} aoFechar={fecharIndexacao} aoIndexar={(fonteId, nomes) => registrarDocumentos(identificarConta(usuario), fonteId, nomes)} />}
     </div>
   );
 }

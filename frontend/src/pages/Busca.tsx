@@ -14,7 +14,8 @@ import {
   Search,
 } from 'lucide-react';
 import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
-import { identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
+import { identificarConta } from '../store/useGerenciamentoStore';
+import { useFontesDadosStore } from '../store/useFontesDadosStore';
 import { pesquisarExemplos, validarFontes, validarPergunta, type DocumentoDemo } from '../services/consumoDemo';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
@@ -86,7 +87,7 @@ export function Busca() {
   const usuario = useAutenticacaoStore(s => s.usuario)!;
   const sair = useAutenticacaoStore(s => s.sair);
   const conta = identificarConta(usuario);
-  const { fontes, erroLeitura: erroFontes, carregar } = useGerenciamentoStore(s => s);
+  const { fontes, erroLeitura: erroFontes, carregando, carregar } = useFontesDadosStore(s => s);
   const minhas = fontes.filter(f => f.conta === conta);
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const [termo, setTermo] = useState('');
@@ -117,7 +118,7 @@ export function Busca() {
 
   function pesquisar(e: FormEvent) {
     e.preventDefault();
-    if (erroFontes) return;
+    if (erroFontes || carregando) return;
     try {
       const consulta = validarPergunta(termo);
       const escopo = validarFontes(conta, fontes, selecionadas);
@@ -148,6 +149,7 @@ export function Busca() {
       </header>
 
       {erroFontes && <div className="chat-alerta" role="alert">{erroFontes}<button onClick={carregar}>Recarregar fontes</button></div>}
+      {carregando && <p className="chat-alerta" role="status">Carregando suas fontes…</p>}
 
       <div className={`busca-corpo${pesquisa ? ' busca-com-resultados' : ' busca-inicial'}`}>
         {!pesquisa && <div className="busca-boas-vindas">
@@ -160,9 +162,9 @@ export function Busca() {
             <label htmlFor="consulta" className="chat-sr-only">O que você está procurando?</label>
             <input ref={campo} id="consulta" type="search" maxLength={2000} value={termo} onChange={e => setTermo(e.target.value)} placeholder="O que você quer encontrar?" required aria-describedby="busca-ajuda" />
             <div className="chat-compositor-ferramentas">
-              <FontesChat fontes={minhas} selecionadas={idsValidos} aoMudar={ids => { setSelecionadas(ids); setPesquisa(null); setErro(''); }} desabilitado={!!erroFontes} contexto="busca" />
+              <FontesChat fontes={minhas} selecionadas={idsValidos} aoMudar={ids => { setSelecionadas(ids); setPesquisa(null); setErro(''); }} desabilitado={!!erroFontes || carregando} contexto="busca" />
               <span id="busca-ajuda" className="chat-dica-envio">{idsValidos.length ? `${idsValidos.length} fonte${idsValidos.length > 1 ? 's' : ''} selecionada${idsValidos.length > 1 ? 's' : ''}` : 'Escolha o contexto'}</span>
-              <button className="chat-enviar" title="Pesquisar documentos" aria-label="Pesquisar documentos" disabled={!idsValidos.length || !termo.trim() || !!erroFontes}><ArrowUp size={20} /></button>
+              <button className="chat-enviar" title="Pesquisar documentos" aria-label="Pesquisar documentos" disabled={!idsValidos.length || !termo.trim() || !!erroFontes || carregando}><ArrowUp size={20} /></button>
             </div>
           </form>
           {erro && <p role="alert" className="chat-alerta">{erro}</p>}

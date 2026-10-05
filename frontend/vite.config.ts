@@ -48,6 +48,10 @@ export default defineConfig(({mode}) => {
             if (req.headers.accept?.includes('text/html')) return '/index.html';
           },
         },
+        '/fontes-dados': {
+          target: alvoProxyApi,
+          changeOrigin: true,
+        },
         '/api': {
           target: alvoProxyApi,
           changeOrigin: true,

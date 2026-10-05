@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Check, MessageSquare, MoreHorizontal, PanelLeftOpen, Pencil, SquarePen, Trash2, X } from 'lucide-react';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
-import { identificarConta, useGerenciamentoStore } from '../store/useGerenciamentoStore';
+import { identificarConta } from '../store/useGerenciamentoStore';
+import { useFontesDadosStore } from '../store/useFontesDadosStore';
 import { useConsumoStore } from '../store/useConsumoStore';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
 import { BarraLateralChat } from '../components/chat/BarraLateralChat';
@@ -14,7 +15,7 @@ export function Conversas() {
   const usuario = useAutenticacaoStore(s => s.usuario)!;
   const sair = useAutenticacaoStore(s => s.sair);
   const conta = identificarConta(usuario);
-  const { fontes, erroLeitura: erroFontes, carregar: carregarFontes } = useGerenciamentoStore(s => s);
+  const { fontes, erroLeitura: erroFontes, carregando: carregandoFontes, carregar: carregarFontes } = useFontesDadosStore(s => s);
   const { conversas, iniciar, enviar, renomear, excluir, carregar, erroLeitura } = useConsumoStore(s => s);
   const [parametros, setParametros] = useSearchParams();
   const id = parametros.get('conversa');
@@ -35,7 +36,7 @@ export function Conversas() {
   const acoes = useRef<HTMLDetailsElement>(null);
   const idsValidos = selecionadas.filter(fid => minhasFontes.some(f => f.id === fid));
   const fonteIndisponivel = !!ativa?.fontes.some(f => !minhasFontes.some(atual => atual.id === f.id));
-  const bloqueado = !!erroFontes || !!erroLeitura || fonteIndisponivel || (!!id && !ativa) || (!ativa && !idsValidos.length);
+  const bloqueado = carregandoFontes || !!erroFontes || !!erroLeitura || fonteIndisponivel || (!!id && !ativa) || (!ativa && !idsValidos.length);
 
   useEffect(() => { setEntrada(''); setErro(''); setEditando(false); setExclusao(false); if (acoes.current) acoes.current.open = false; }, [id]);
   useEffect(() => { setSelecionadas(ids => ids.filter(fid => fontes.some(f => f.id === fid && f.conta === conta))); }, [fontes, conta]);
@@ -95,6 +96,7 @@ export function Conversas() {
         </>}
       </header>
       {erroFontes && <div className="chat-alerta" role="alert">{erroFontes}<button onClick={carregarFontes}>Recarregar fontes</button></div>}
+      {carregandoFontes && <p className="chat-alerta" role="status">Carregando suas fontes…</p>}
       {erroLeitura && <div className="chat-alerta" role="alert">{erroLeitura}<button onClick={carregar}>Recarregar conversas</button></div>}
       {editando && <form className="chat-renomear" onSubmit={salvarTitulo}><label htmlFor="chat-titulo">Título da conversa</label><div><input id="chat-titulo" autoFocus required maxLength={80} value={titulo} onChange={e => setTitulo(e.target.value)} /><button className="chat-icon" aria-label="Salvar título"><Check size={18} /></button><button className="chat-icon" type="button" aria-label="Cancelar renomeação" onClick={() => { setEditando(false); setErro(''); }}><X size={18} /></button></div>{erro && <p role="alert">{erro}</p>}</form>}
       {id && !ativa ? <div className="chat-indisponivel"><MessageSquare size={28} /><h1>Conversa indisponível</h1><p>Escolha uma conversa do histórico ou comece outra.</p><button className="chat-primary" onClick={nova}>Nova conversa</button></div> : <div className={`chat-corpo${ativa ? ' chat-em-andamento' : ' chat-inicial'}`}>
@@ -102,7 +104,7 @@ export function Conversas() {
         <div className="chat-area-compositor">
           {fonteIndisponivel && <p className="chat-alerta" role="alert">Uma fonte foi excluída. Inicie outra conversa para selecionar novas fontes.</p>}
           {erro && !editando && <p className="chat-alerta" role="alert">{erro}</p>}
-          <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={ativa?.fontes} desabilitarFontes={!!erroFontes || !!erroLeitura} />
+          <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={ativa?.fontes} desabilitarFontes={carregandoFontes || !!erroFontes || !!erroLeitura} />
           {!ativa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
           <p className="chat-rodape">{ativa ? 'Confira as fontes. Respostas podem conter imprecisões.' : 'Selecione suas fontes de dados para começar.'}</p>
         </div>
