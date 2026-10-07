@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, Path, status
 from time import perf_counter
+from uuid import UUID
 
 from backend.api.schemas.base_response import BaseResponse
 from backend.api.schemas.backoffice.fontes_dados_schemas import (
@@ -7,9 +8,18 @@ from backend.api.schemas.backoffice.fontes_dados_schemas import (
     FonteDadosUpdateRequest,
     FonteDadosResponse
 )
+from backend.api.schemas.backoffice.documentos_schemas import (
+    DocumentosFonteResponse,
+    DocumentoDetalheResponse,
+    DocumentoDesindexadoResponse,
+)
 from backend.api.models.usuario import Usuario
 from backend.api.services.fontes_dados import ServicoFontesDeDados
-from backend.api.dependencies.fontes_dados import obter_servico_fontes_de_dados
+from backend.api.services.documentos import ServicoDocumentos
+from backend.api.dependencies.fontes_dados import (
+    obter_servico_fontes_de_dados,
+    obter_servico_documentos
+)
 from backend.api.dependencies.auth import obter_usuario_autenticado
 
 
@@ -120,4 +130,77 @@ async def deletar_fonte(
     return BaseResponse(
         meta={'tempo_execucao': perf_counter() - inicio},
         dados=FonteDadosResponse.model_validate(fonte_dados)
+    )
+
+
+@fontes_dados_router.get(
+    '/{id}/documentos',
+    status_code=status.HTTP_200_OK,
+    description='Lista os documentos indexados vinculados a uma fonte de dados.'
+)
+async def listar_documentos(
+    id: int = Path(gt=0),
+    servico_documentos: ServicoDocumentos = Depends(obter_servico_documentos),
+    usuario_autenticado: Usuario = Depends(obter_usuario_autenticado)
+) -> BaseResponse[DocumentosFonteResponse]:
+    inicio = perf_counter()
+    documentos = await servico_documentos.listar_documentos(
+        usuario_autenticado.id,
+        id
+    )
+
+    return BaseResponse(
+        meta={'tempo_execucao': perf_counter() - inicio},
+        dados=DocumentosFonteResponse(documentos=documentos)
+    )
+
+
+@fontes_dados_router.get(
+    '/{id}/documentos/{documento_id}',
+    status_code=status.HTTP_200_OK,
+    description=(
+        'Retorna os dados de um documento indexado e seus trechos, '
+        'ordenados pelo ID do trecho.'
+    )
+)
+async def obter_documento(
+    documento_id: UUID,
+    id: int = Path(gt=0),
+    servico_documentos: ServicoDocumentos = Depends(obter_servico_documentos),
+    usuario_autenticado: Usuario = Depends(obter_usuario_autenticado)
+) -> BaseResponse[DocumentoDetalheResponse]:
+    inicio = perf_counter()
+    documento = await servico_documentos.obter_documento(
+        usuario_autenticado.id,
+        id,
+        str(documento_id)
+    )
+
+    return BaseResponse(
+        meta={'tempo_execucao': perf_counter() - inicio},
+        dados=documento
+    )
+
+
+@fontes_dados_router.delete(
+    '/{id}/documentos/{documento_id}',
+    status_code=status.HTTP_200_OK,
+    description='Desindexa os trechos de um documento vinculado à fonte de dados.',
+)
+async def desindexar_documento(
+    documento_id: UUID,
+    id: int = Path(gt=0),
+    servico_documentos: ServicoDocumentos = Depends(obter_servico_documentos),
+    usuario_autenticado: Usuario = Depends(obter_usuario_autenticado),
+) -> BaseResponse[DocumentoDesindexadoResponse]:
+    inicio = perf_counter()
+    documento = await servico_documentos.desindexar_documento(
+        usuario_autenticado.id,
+        id,
+        str(documento_id),
+    )
+
+    return BaseResponse(
+        meta={'tempo_execucao': perf_counter() - inicio},
+        dados=documento,
     )
