@@ -1,10 +1,12 @@
 import { DadosArquivo } from '../tipos';
 import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
+import { useChaveConsumoStore } from '../store/useChaveConsumoStore';
 
 // Em dev, prefira VITE_API_URL=/api (proxy do Vite). Em producao, use a URL absoluta da API.
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || '/api';
 // O router registra /auth e /me na raiz; /api é reservado às rotas públicas.
 const AUTH_BASE_URL = API_BASE_URL.replace(/\/$/, '').replace(/\/api$/, '');
+const CONSUMO_BASE_URL = `${API_BASE_URL.replace(/\/$/, '')}/v1`;
 
 export interface TokenResponse {
   access_token: string;
@@ -56,7 +58,15 @@ export interface RespostaPesquisa {
   pagina: number;
   tamanho: number;
   paginas_totais: number;
-  resultados: DadosArquivo[];
+  resultados: DocumentoPesquisa[];
+}
+
+export interface DocumentoPesquisa {
+  fonte_dados_id: number;
+  documento_id: string;
+  nome_documento: string;
+  pontuacao: number;
+  trechos: Array<{ id_trecho: number | null; conteudo: string | null; pontuacao: number }>;
 }
 
 export interface MensagemResposta {
@@ -110,20 +120,6 @@ interface RespostaLoteZipOpenAPI {
     repositorio: RepositorioOpenAPI;
     indexacao?: unknown;
   };
-}
-
-interface TrechoPesquisaOpenAPI {
-  id_trecho: number | string;
-  id_repositorio?: number | string;
-  pontuacao: number;
-  conteudo: string;
-}
-
-interface DocumentoPesquisaOpenAPI {
-  nome_documento: string;
-  id_repositorio?: number | string;
-  pontuacao: number;
-  trechos?: TrechoPesquisaOpenAPI[];
 }
 
 interface PaginacaoOpenAPI {
@@ -313,39 +309,6 @@ function extrairTipoArquivo(nomeDocumento: string): string {
   return partes.length > 1 ? partes[partes.length - 1]?.toLowerCase() ?? 'arquivo' : 'arquivo';
 }
 
-function normalizarTrechos(trechos: TrechoPesquisaOpenAPI[]): string {
-  return trechos
-    .map((trecho) => trecho.conteudo)
-    .filter((conteudo) => conteudo.trim().length > 0)
-    .join('\n\n');
-}
-
-function normalizarRespostaPesquisa(
-  resposta: BaseResponse<DocumentoPesquisaOpenAPI[]>,
-  idRepositorioSelecionado: string
-): RespostaPesquisa {
-  const resultados = resposta.dados.map((documento, indice) => {
-    const idRepositorio = String(documento.id_repositorio ?? idRepositorioSelecionado);
-
-    return {
-      id: `${idRepositorio}-${documento.nome_documento}-${indice}`,
-      titulo: documento.nome_documento,
-      tipo: extrairTipoArquivo(documento.nome_documento),
-      repositorio: idRepositorio,
-      pontuacao: documento.pontuacao,
-      trecho: normalizarTrechos(documento.trechos ?? []),
-    };
-  });
-
-  return {
-    total: resposta.paginacao?.total ?? resultados.length,
-    pagina: resposta.paginacao?.pagina ?? 1,
-    tamanho: resposta.paginacao?.por_pagina ?? resultados.length,
-    paginas_totais: resposta.paginacao?.paginas ?? 1,
-    resultados,
-  };
-}
-
 export function normalizarConversa(conversa: ConversaOpenAPI): SessaoChat {
   return {
     id: String(conversa.id),
@@ -444,7 +407,26 @@ async function executarRequisicao<T>(
   return resposta.json() as Promise<T>;
 }
 
+async function executarConsumo<T>(caminho: string, opcoes?: RequestInit, chave = useChaveConsumoStore.getState().chave): Promise<T> {
+  if (!chave) throw new Error('Informe uma chave de API criada no módulo de gerenciamento.');
+  const cabecalhos = new Headers(opcoes?.headers);
+  cabecalhos.set('X-API-Key', chave);
+  try {
+    return await executarRequisicao<T>(caminho, { ...opcoes, headers: cabecalhos },
+      { baseUrl: CONSUMO_BASE_URL, tokenAcesso: null });
+  } catch (erro) {
+    if ((erro as ErroAPI)?.status === 401 && useChaveConsumoStore.getState().chave === chave) {
+      useChaveConsumoStore.getState().limpar('Chave de API inválida ou excluída. Informe uma chave ativa para continuar.');
+    }
+    throw erro;
+  }
+}
+
 export const api = {
+  listarFontesConsumo: async (): Promise<FonteDadosBackend[]> => {
+    const resposta = await executarConsumo<BaseResponse<FonteDadosBackend[]>>('/fontes-dados/');
+    return resposta.dados;
+  },
   cadastrar: async (dados: DadosCadastro): Promise<Pick<Usuario, 'nome' | 'email'>> => {
     const resposta = await executarRequisicao<BaseResponse<Pick<Usuario, 'nome' | 'email'>>>(
       '/auth/cadastrar',
@@ -545,24 +527,30 @@ export const api = {
 
   pesquisarDocumentos: async (
     termo: string,
-    pagina: number,
-    tamanho: number,
-    hibrida: boolean,
-    idRepositorio: string
+    fonteIds: number[],
+    pagina = 1,
   ): Promise<RespostaPesquisa> => {
-    const params = new URLSearchParams({
-      q: termo,
-      pagina: pagina.toString(),
-      tamanho: tamanho.toString(),
-      hibrida: hibrida.toString(),
-      id_repositorio: idRepositorio,
-    });
-
-    const resposta = await executarRequisicao<BaseResponse<DocumentoPesquisaOpenAPI[]>>(
-      `/pesquisa/?${params.toString()}`
+    const q = termo.trim();
+    if (!q) throw new Error('Escreva o que você quer consultar.');
+    if (q.length > 2000) throw new Error('Use até 2.000 caracteres por consulta.');
+    if (!fonteIds.length || fonteIds.some(id => !Number.isSafeInteger(id) || id < 1)) {
+      throw new Error('Selecione ao menos uma fonte de dados válida para pesquisar.');
+    }
+    if (!Number.isSafeInteger(pagina) || pagina < 1) throw new Error('Página de pesquisa inválida.');
+    const tamanho = 10;
+    const resposta = await executarConsumo<BaseResponse<DocumentoPesquisa[]>>(
+      '/pesquisar', {
+        method: 'POST',
+        body: JSON.stringify({ q, fonte_dados_ids: [...new Set(fonteIds)], tipo_pesquisa: 'hibrida', pagina, tamanho }),
+      },
     );
-
-    return normalizarRespostaPesquisa(resposta, idRepositorio);
+    return {
+      resultados: resposta.dados,
+      total: resposta.paginacao?.total ?? resposta.dados.length,
+      pagina: resposta.paginacao?.pagina ?? pagina,
+      tamanho: resposta.paginacao?.por_pagina ?? tamanho,
+      paginas_totais: resposta.paginacao?.paginas ?? 1,
+    };
   },
 
   listarRepositorios: async (): Promise<RepositorioBackend[]> => {

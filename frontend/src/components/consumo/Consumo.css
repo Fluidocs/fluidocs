@@ -1,4 +1,25 @@
 .consumo .gestao-main { padding: 40px 32px; }
+.consumo-acesso { min-height: 100dvh; padding: 24px; }
+.consumo-acesso-topo { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.consumo-acesso-conteudo { width: min(100%, 480px); margin: 12vh auto 40px; }
+.consumo-acesso-conteudo > svg { color: var(--g-accent); margin-bottom: 24px; }
+.consumo-acesso-conteudo h1 { font-size: 28px; line-height: 1.3; letter-spacing: -.025em; }
+.consumo-acesso-conteudo > p { color: var(--g-muted); font-size: 14px; line-height: 1.8; margin-top: 16px; }
+.consumo-acesso-conteudo form { margin: 32px 0 24px; }
+.consumo-acesso-conteudo label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.consumo-acesso-conteudo input { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid var(--g-line); border-radius: 6px; background: var(--g-paper); color: var(--g-ink); font-size: 16px; caret-color: var(--g-accent); }
+.consumo-acesso-conteudo form > p { font-size: 13px; line-height: 1.7; color: var(--g-muted); margin-top: 10px; }
+.consumo-acesso-conteudo form > .gestao-error { color: var(--g-danger); }
+.consumo-acesso-conteudo form > button { margin-top: 24px; }
+.consumo-acesso :is(input, button, a):focus-visible { outline: 2px solid var(--g-accent); outline-offset: 3px; }
+.consumo-autenticado { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+.consumo-autenticado .chat-app { height: 100%; min-height: 0; }
+.consumo-chave-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; padding: 6px 20px; border-bottom: 1px solid var(--chat-line); font-size: 12px; color: var(--chat-muted); }
+.consumo-chave-barra span { display: inline-flex; align-items: center; gap: 8px; }
+.consumo-chave-barra button { min-height: 36px; padding: 6px 8px; color: var(--chat-accent); cursor: pointer; }
+.consumo-chave-barra button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.consumo-chave-barra button:focus-visible { outline: 2px solid var(--chat-accent); outline-offset: 2px; }
+.consumo-chave-barra button:disabled { opacity: .5; cursor: not-allowed; }
 .consumo-demo { color: var(--g-muted); font-size: 13px; line-height: 1.8; max-width: 80ch; margin: 20px 0 28px; }
 .consumo-label, .conversa-compositor > label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
 .consumo-hint { color: var(--g-muted); font-size: 12px; line-height: 1.7; margin-top: 10px; }

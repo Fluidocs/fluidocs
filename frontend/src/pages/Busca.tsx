@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUp,
-  CalendarDays,
   Database,
   FileSearch,
   FileText,
@@ -15,14 +14,13 @@ import {
 } from 'lucide-react';
 import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
 import { identificarConta } from '../store/useGerenciamentoStore';
-import { useFontesDadosStore } from '../store/useFontesDadosStore';
-import { pesquisarExemplos, validarFontes, validarPergunta, type DocumentoDemo } from '../services/consumoDemo';
+import { useFontesConsumoStore } from '../store/useFontesDadosStore';
+import { useBuscaStore } from '../store/useBuscaStore';
+import { validarFontes, validarPergunta } from '../services/consumoDemo';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
 import logo from '../assets/prisma-norte-logo.svg';
 import '../components/chat/Chat.css';
-
-const formatarData = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' });
 
 function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
   aberto: boolean;
@@ -60,8 +58,8 @@ function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
       </div>
     </div>
     <div className="busca-sidebar-nota">
-      <span>Demonstração local</span>
-      <p>Os resultados simulam documentos internos da Prisma Norte. Nenhum arquivo real é consultado.</p>
+      <span>Busca nos seus arquivos</span>
+      <p>Consulte os documentos indexados nas fontes de dados da sua conta.</p>
     </div>
     <div className="chat-sidebar-base">
       <Link to="/hub"><LayoutGrid size={17} />Trocar módulo</Link>
@@ -87,11 +85,11 @@ export function Busca() {
   const usuario = useAutenticacaoStore(s => s.usuario)!;
   const sair = useAutenticacaoStore(s => s.sair);
   const conta = identificarConta(usuario);
-  const { fontes, erroLeitura: erroFontes, carregando, carregar } = useFontesDadosStore(s => s);
+  const { fontes, erroLeitura: erroFontes, carregando, carregar } = useFontesConsumoStore(s => s);
   const minhas = fontes.filter(f => f.conta === conta);
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const [termo, setTermo] = useState('');
-  const [pesquisa, setPesquisa] = useState<{ termo: string; resultados: DocumentoDemo[] } | null>(null);
+  const { pesquisa, pesquisando, erro: erroPesquisa, pesquisar: buscarDocumentos, limpar } = useBuscaStore(s => s);
   const [erro, setErro] = useState('');
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const [navegacaoAberta, setNavegacaoAberta] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
@@ -101,8 +99,10 @@ export function Busca() {
 
   useEffect(() => {
     setSelecionadas(ids => ids.filter(id => fontes.some(f => f.id === id && f.conta === conta)));
-    setPesquisa(null);
-  }, [fontes, conta]);
+    limpar();
+  }, [fontes, conta, limpar]);
+
+  useEffect(() => () => limpar(), [limpar]);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 760px)');
@@ -118,11 +118,11 @@ export function Busca() {
 
   function pesquisar(e: FormEvent) {
     e.preventDefault();
-    if (erroFontes || carregando) return;
+    if (erroFontes || carregando || pesquisando) return;
     try {
       const consulta = validarPergunta(termo);
       const escopo = validarFontes(conta, fontes, selecionadas);
-      setPesquisa({ termo: consulta, resultados: pesquisarExemplos(consulta, escopo) });
+      void buscarDocumentos(consulta, escopo);
       setErro('');
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível pesquisar. Tente novamente.');
@@ -131,7 +131,7 @@ export function Busca() {
 
   function definirExemplo(exemplo: string) {
     setTermo(exemplo);
-    setPesquisa(null);
+    limpar();
     setErro('');
     requestAnimationFrame(() => campo.current?.focus());
   }
@@ -145,7 +145,7 @@ export function Busca() {
           <button ref={navegacaoBotao} className="chat-icon" aria-label={navegacaoAberta ? 'Recolher navegação' : 'Abrir navegação'} aria-expanded={navegacaoAberta} aria-controls="busca-sidebar" onClick={() => setNavegacaoAberta(!navegacaoAberta)}><PanelLeftOpen size={20} /></button>
           <span className="chat-header-nome">Prisma Norte<span>Busca</span></span>
         </div>
-        {pesquisa && <span className="busca-header-meta" role="status">{pesquisa.resultados.length} documento{pesquisa.resultados.length === 1 ? '' : 's'} encontrado{pesquisa.resultados.length === 1 ? '' : 's'}</span>}
+        {pesquisa && <span className="busca-header-meta" role="status">{pesquisa.total} documento{pesquisa.total === 1 ? '' : 's'} encontrado{pesquisa.total === 1 ? '' : 's'}</span>}
       </header>
 
       {erroFontes && <div className="chat-alerta" role="alert">{erroFontes}<button onClick={carregar}>Recarregar fontes</button></div>}
@@ -160,52 +160,57 @@ export function Busca() {
         <div className="busca-area-consulta">
           <form className="busca-compositor" onSubmit={pesquisar}>
             <label htmlFor="consulta" className="chat-sr-only">O que você está procurando?</label>
-            <input ref={campo} id="consulta" type="search" maxLength={2000} value={termo} onChange={e => setTermo(e.target.value)} placeholder="O que você quer encontrar?" required aria-describedby="busca-ajuda" />
+            <input ref={campo} id="consulta" type="search" maxLength={2000} value={termo} onChange={e => setTermo(e.target.value)} placeholder="O que você quer encontrar?" required disabled={pesquisando} aria-describedby="busca-ajuda" />
             <div className="chat-compositor-ferramentas">
-              <FontesChat fontes={minhas} selecionadas={idsValidos} aoMudar={ids => { setSelecionadas(ids); setPesquisa(null); setErro(''); }} desabilitado={!!erroFontes || carregando} contexto="busca" />
+              <FontesChat fontes={minhas} selecionadas={idsValidos} aoMudar={ids => { setSelecionadas(ids); limpar(); setErro(''); }} desabilitado={!!erroFontes || carregando || pesquisando} contexto="busca" />
               <span id="busca-ajuda" className="chat-dica-envio">{idsValidos.length ? `${idsValidos.length} fonte${idsValidos.length > 1 ? 's' : ''} selecionada${idsValidos.length > 1 ? 's' : ''}` : 'Escolha o contexto'}</span>
-              <button className="chat-enviar" title="Pesquisar documentos" aria-label="Pesquisar documentos" disabled={!idsValidos.length || !termo.trim() || !!erroFontes || carregando}><ArrowUp size={20} /></button>
+              <button className="chat-enviar" title="Pesquisar documentos" aria-label="Pesquisar documentos" disabled={!idsValidos.length || !termo.trim() || !!erroFontes || carregando || pesquisando}><ArrowUp size={20} /></button>
             </div>
           </form>
-          {erro && <p role="alert" className="chat-alerta">{erro}</p>}
-          {!pesquisa && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
+          {(erro || erroPesquisa) && <p role="alert" className="chat-alerta">{erro || erroPesquisa}</p>}
+          {pesquisando && <p role="status" className="chat-alerta">Pesquisando seus documentos…</p>}
+          {!pesquisa && !pesquisando && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
             {['Benefícios para novos talentos', 'Padrões de revisão de código', 'Como publicar uma nova versão'].map(exemplo => <button key={exemplo} onClick={() => definirExemplo(exemplo)}>{exemplo}</button>)}
           </div>}
-          <p className="chat-rodape">Os resultados desta demonstração são fictícios e ficam limitados às fontes selecionadas.</p>
+          <p className="chat-rodape">A busca consulta os documentos indexados nas fontes selecionadas.</p>
         </div>
 
-        {pesquisa && <section className="busca-resultados" aria-labelledby="resultados-titulo">
+        {pesquisa && <section className="busca-resultados" aria-labelledby="resultados-titulo" aria-busy={pesquisando}>
           <div className="busca-resultados-cabecalho">
             <div>
               <h1 id="resultados-titulo">Resultados para “{pesquisa.termo}”</h1>
               <p>Trechos mais relacionados dentro das fontes que você selecionou.</p>
             </div>
-            <button className="busca-nova-consulta" onClick={() => { setTermo(''); setPesquisa(null); setErro(''); requestAnimationFrame(() => campo.current?.focus()); }}><Search size={16} />Nova consulta</button>
+            <button className="busca-nova-consulta" onClick={() => { setTermo(''); limpar(); setErro(''); requestAnimationFrame(() => campo.current?.focus()); }}><Search size={16} />Nova consulta</button>
           </div>
 
           {pesquisa.resultados.length ? <div className="busca-lista">
-            {pesquisa.resultados.map(documento => <article className="busca-resultado" key={documento.id}>
+            {pesquisa.resultados.map(documento => <article className="busca-resultado" key={`${documento.fonte_dados_id}:${documento.documento_id}`}>
               <div className="busca-resultado-topo">
                 <span className="busca-resultado-icone" aria-hidden="true"><FileText size={21} strokeWidth={1.7} /></span>
                 <div className="busca-resultado-identidade">
-                  <h2>{documento.nome}</h2>
-                  <p>{documento.titulo}</p>
+                  <h2>{documento.nome_documento}</h2>
                 </div>
-                <span className="busca-resultado-tipo">{documento.tipo}</span>
+                <span className="busca-resultado-tipo">{documento.nome_documento.includes('.') ? documento.nome_documento.split('.').pop()?.toUpperCase() : 'ARQUIVO'}</span>
               </div>
-              <blockquote className="busca-resultado-trecho">{documento.trecho.length > 260 ? `${documento.trecho.slice(0, 260)}…` : documento.trecho}</blockquote>
+              {documento.trechos.some(t => t.conteudo?.trim())
+                ? documento.trechos.filter(t => t.conteudo?.trim()).map((trecho, indice) => <blockquote className="busca-resultado-trecho" key={`${trecho.id_trecho}:${indice}`}>{trecho.conteudo}</blockquote>)
+                : <p className="busca-resultado-trecho">Nenhum trecho disponível para este documento.</p>}
               <footer className="busca-resultado-meta">
-                <span><CalendarDays size={14} aria-hidden="true" />Indexado em <time dateTime={documento.indexadoEm}>{formatarData.format(new Date(documento.indexadoEm))}</time></span>
-                <span><Database size={14} aria-hidden="true" />{documento.fonteNome}</span>
-                <span>Texto de exemplo</span>
+                <span><Database size={14} aria-hidden="true" />{pesquisa.fontes.find(f => Number(f.id) === documento.fonte_dados_id)?.nome ?? 'Fonte indisponível'}</span>
               </footer>
             </article>)}
           </div> : <div className="busca-sem-resultados">
             <FileSearch size={30} strokeWidth={1.5} aria-hidden="true" />
             <h2>Nenhum documento encontrado</h2>
-            <p>Tente pesquisar sobre onboarding, benefícios, desenvolvimento ou deploy, ou ajuste as fontes selecionadas.</p>
-            <button className="chat-primary" onClick={() => { setPesquisa(null); requestAnimationFrame(() => campo.current?.focus()); }}>Editar consulta</button>
+            <p>Tente outros termos ou ajuste as fontes selecionadas. Confira se seus arquivos já foram indexados.</p>
+            <button className="chat-primary" onClick={() => { limpar(); requestAnimationFrame(() => campo.current?.focus()); }}>Editar consulta</button>
           </div>}
+          {pesquisa.paginas_totais > 1 && <nav className="busca-resultados-cabecalho" aria-label="Páginas de resultados">
+            <button className="busca-nova-consulta" disabled={pesquisando || pesquisa.pagina <= 1} onClick={() => void buscarDocumentos(pesquisa.termo, pesquisa.fontes, pesquisa.pagina - 1)}>Página anterior</button>
+            <span role="status">Página {pesquisa.pagina} de {pesquisa.paginas_totais}</span>
+            <button className="busca-nova-consulta" disabled={pesquisando || pesquisa.pagina >= pesquisa.paginas_totais} onClick={() => void buscarDocumentos(pesquisa.termo, pesquisa.fontes, pesquisa.pagina + 1)}>Próxima página</button>
+          </nav>}
         </section>}
       </div>
     </main>

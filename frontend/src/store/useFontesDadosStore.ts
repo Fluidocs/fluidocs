@@ -2,6 +2,7 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { api, extrairMensagemErro, type DadosFonteDados, type FonteDadosBackend } from '../services/api';
 import { useAutenticacaoStore } from './useAutenticacaoStore';
+import { useChaveConsumoStore } from './useChaveConsumoStore';
 import { identificarConta, type FonteDados } from './useGerenciamentoStore';
 
 type ClienteFontes = Pick<typeof api, 'listarFontesDados' | 'criarFonteDados' | 'atualizarFonteDados' | 'excluirFonteDados'>;
@@ -105,11 +106,21 @@ export function criarStoreFontesDados(
 }
 
 export const fontesDadosStore = criarStoreFontesDados();
+export const fontesConsumoStore = criarStoreFontesDados({ ...api, listarFontesDados: api.listarFontesConsumo });
 useAutenticacaoStore.subscribe((sessao, anterior) => {
   if (sessao.tokenAcesso !== anterior.tokenAcesso || sessao.usuario?.id !== anterior.usuario?.id ||
-      sessao.usuario?.email !== anterior.usuario?.email) fontesDadosStore.getState().limpar();
+      sessao.usuario?.email !== anterior.usuario?.email) {
+    fontesDadosStore.getState().limpar();
+    fontesConsumoStore.getState().limpar();
+  }
+});
+useChaveConsumoStore.subscribe((sessao, anterior) => {
+  if (sessao.chave !== anterior.chave) fontesConsumoStore.getState().limpar();
 });
 
 export function useFontesDadosStore<T>(seletor: (estado: EstadoFontesDados) => T) {
   return useStore(fontesDadosStore, seletor);
+}
+export function useFontesConsumoStore<T>(seletor: (estado: EstadoFontesDados) => T) {
+  return useStore(fontesConsumoStore, seletor);
 }

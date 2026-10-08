@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Check, MessageSquare, MoreHorizontal, PanelLeftOpen, Pencil, SquarePen, Trash2, X } from 'lucide-react';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { identificarConta } from '../store/useGerenciamentoStore';
-import { useFontesDadosStore } from '../store/useFontesDadosStore';
+import { useFontesConsumoStore } from '../store/useFontesDadosStore';
 import { useConsumoStore } from '../store/useConsumoStore';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
 import { BarraLateralChat } from '../components/chat/BarraLateralChat';
@@ -15,7 +15,7 @@ export function Conversas() {
   const usuario = useAutenticacaoStore(s => s.usuario)!;
   const sair = useAutenticacaoStore(s => s.sair);
   const conta = identificarConta(usuario);
-  const { fontes, erroLeitura: erroFontes, carregando: carregandoFontes, carregar: carregarFontes } = useFontesDadosStore(s => s);
+  const { fontes, erroLeitura: erroFontes, carregando: carregandoFontes, carregar: carregarFontes } = useFontesConsumoStore(s => s);
   const { conversas, iniciar, enviar, renomear, excluir, carregar, erroLeitura } = useConsumoStore(s => s);
   const [parametros, setParametros] = useSearchParams();
   const id = parametros.get('conversa');
