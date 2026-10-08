@@ -47,6 +47,36 @@ export interface DadosFonteDados {
   descricao: string;
 }
 
+export interface IndexacaoDocumento {
+  id_processamento: string;
+  nome_arquivo: string;
+  fonte_dados_id: number;
+  documento_id: string;
+  status: 'processing';
+}
+
+export interface IndexacaoLote {
+  id_processamento: string;
+  nome_arquivo: string;
+  fonte_dados_id: number;
+  quantidade_arquivos: number;
+  status: 'processing';
+}
+
+export const FORMATOS_INDEXACAO = ['pdf', 'txt', 'png', 'jpg', 'jpeg', 'zip'] as const;
+
+export function arquivoEhZip(arquivo: File): boolean {
+  return arquivo.name.toLowerCase().endsWith('.zip');
+}
+
+export function validarArquivoIndexacao(arquivo: File): void {
+  const extensao = arquivo.name.includes('.') ? arquivo.name.split('.').pop()?.toLowerCase() : '';
+  if (!FORMATOS_INDEXACAO.some(formato => formato === extensao)) {
+    throw new Error(`“${arquivo.name}” não é compatível. Use PDF, TXT, PNG, JPG, JPEG ou ZIP.`);
+  }
+  if (!arquivo.size) throw new Error(`“${arquivo.name}” está vazio. Escolha um arquivo com conteúdo.`);
+}
+
 interface UsuarioOpenAPI {
   id: number;
   nome: string;
@@ -523,6 +553,34 @@ export const api = {
       `/fontes-dados/${id}`, { method: 'DELETE' },
       { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
     );
+  },
+
+  indexarDocumento: async (fonteId: number, arquivo: File): Promise<IndexacaoDocumento> => {
+    validarArquivoIndexacao(arquivo);
+    if (arquivoEhZip(arquivo)) throw new Error('Envie o ZIP pela indexação em lote.');
+    if (!Number.isSafeInteger(fonteId) || fonteId < 1) throw new Error('Selecione uma fonte de dados válida.');
+    const dados = new FormData();
+    dados.append('fonte_dados_id', String(fonteId));
+    dados.append('arquivo', arquivo);
+    const resposta = await executarRequisicao<BaseResponse<IndexacaoDocumento>>(
+      '/indexar/', { method: 'POST', body: dados },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados;
+  },
+
+  indexarLoteZip: async (fonteId: number, arquivo: File): Promise<IndexacaoLote> => {
+    validarArquivoIndexacao(arquivo);
+    if (!arquivoEhZip(arquivo)) throw new Error('Selecione um arquivo ZIP para indexar em lote.');
+    if (!Number.isSafeInteger(fonteId) || fonteId < 1) throw new Error('Selecione uma fonte de dados válida.');
+    const dados = new FormData();
+    dados.append('fonte_dados_id', String(fonteId));
+    dados.append('arquivo_zip', arquivo);
+    const resposta = await executarRequisicao<BaseResponse<IndexacaoLote>>(
+      '/indexar/lote-zip', { method: 'POST', body: dados },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados;
   },
 
   pesquisarDocumentos: async (

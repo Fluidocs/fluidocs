@@ -5,22 +5,27 @@ import { AlternarTema } from './AlternarTema';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { identificarConta } from '../store/useGerenciamentoStore';
 import { useFontesDadosStore } from '../store/useFontesDadosStore';
+import { ModalIndexacao } from './gerenciamento/ModalIndexacao';
 import logo from '../assets/fluidocs-logo.png';
 import './gerenciamento/Gerenciamento.css';
 import './chat/Chat.css';
 
 export function LayoutGerenciamento() {
   const { usuario, tokenAcesso, estaAutenticado, sair } = useAutenticacaoStore();
-  const carregar = useFontesDadosStore(s => s.carregar);
+  const { carregar, fontes, carregando, erroLeitura, indexarArquivos } = useFontesDadosStore(s => s);
   const { pathname } = useLocation();
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const [navegacaoAberta, setNavegacaoAberta] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
   const dialogo = useRef<HTMLDialogElement>(null);
   const navegacaoBotao = useRef<HTMLButtonElement>(null);
+  const origemIndexacao = useRef<HTMLButtonElement | null>(null);
+  const [indexacaoAberta, setIndexacaoAberta] = useState(false);
 
   useEffect(() => {
-    if (estaAutenticado && tokenAcesso && pathname !== '/chaves-api') void carregar();
+    if (estaAutenticado && tokenAcesso) void carregar();
   }, [carregar, estaAutenticado, tokenAcesso, pathname]);
+
+  useEffect(() => { setIndexacaoAberta(false); }, [tokenAcesso, pathname]);
 
   useEffect(() => {
     const anterior = document.title;
@@ -59,7 +64,7 @@ export function LayoutGerenciamento() {
       <NavLink to="/fontes-de-dados" onClick={() => mobile && fecharNavegacao()}><Database size={17} aria-hidden="true" />Fontes de dados</NavLink>
       <NavLink to="/chaves-api" onClick={() => mobile && fecharNavegacao()}><KeyRound size={17} aria-hidden="true" />Chaves de API</NavLink>
     </nav>
-    <button type="button" className="gestao-nav-action" disabled title="Envio de documentos indisponível"><UploadCloud size={17} aria-hidden="true" />Indexar documentos</button>
+    <button type="button" className="gestao-nav-action" disabled={carregando || !!erroLeitura || !fontes.length} title={!fontes.length ? 'Crie uma fonte de dados para indexar documentos' : undefined} onClick={e => { origemIndexacao.current = e.currentTarget; if (mobile) { dialogo.current?.close(); setNavegacaoAberta(false); } setIndexacaoAberta(true); }}><UploadCloud size={17} aria-hidden="true" />Indexar documentos</button>
     <div className="chat-sidebar-base">
       <Link to="/hub"><LayoutGrid size={17} aria-hidden="true" />Trocar módulo</Link>
       <div className="chat-conta">
@@ -84,6 +89,7 @@ export function LayoutGerenciamento() {
           <div className="gestao-scroll"><Outlet key={`${identificarConta(usuario)}:${tokenAcesso}`} /></div>
         </main>
       </div>
+      {indexacaoAberta && <ModalIndexacao key={tokenAcesso} fontes={fontes} aoIndexar={indexarArquivos} aoFechar={() => { setIndexacaoAberta(false); requestAnimationFrame(() => (mobile ? navegacaoBotao.current : origemIndexacao.current)?.focus()); }} />}
     </div>
   );
 }

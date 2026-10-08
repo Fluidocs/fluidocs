@@ -6,6 +6,7 @@ import { useFontesDadosStore } from '../store/useFontesDadosStore';
 import type { FonteDados } from '../store/useGerenciamentoStore';
 import { EditorCadastro } from '../components/gerenciamento/EditorCadastro';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
+import { ModalIndexacao } from '../components/gerenciamento/ModalIndexacao';
 
 const data = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -17,19 +18,21 @@ export function FontesDados() {
 }
 
 function GerenciarFontes({ tokenAcesso }: { tokenAcesso: string }) {
-  const { fontes, salvarFonte, excluirFonte, carregar, carregando, erroLeitura } = useFontesDadosStore(s => s);
+  const { fontes, salvarFonte, excluirFonte, indexarArquivos, carregar, carregando, erroLeitura } = useFontesDadosStore(s => s);
   const [busca, setBusca] = useState('');
   const [editor, setEditor] = useState<FonteDados | 'nova' | null>(null);
   const [exclusao, setExclusao] = useState<FonteDados | null>(null);
+  const [indexacao, setIndexacao] = useState<FonteDados | null>(null);
   const [mensagem, setMensagem] = useState('');
   const criar = useRef<HTMLButtonElement>(null);
   const origemEditor = useRef<HTMLButtonElement | null>(null);
+  const origemIndexacao = useRef<HTMLButtonElement | null>(null);
   const ativo = useRef(false);
   useEffect(() => { ativo.current = true; return () => { ativo.current = false; }; }, []);
 
   const termo = busca.trim().toLocaleLowerCase('pt-BR');
   const visiveis = fontes.filter(f => `${f.nome} ${f.descricao}`.toLocaleLowerCase('pt-BR').includes(termo));
-  const bloqueado = carregando || !!erroLeitura || !!editor || !!exclusao;
+  const bloqueado = carregando || !!erroLeitura || !!editor || !!exclusao || !!indexacao;
   const sessaoAtual = () => ativo.current && useAutenticacaoStore.getState().tokenAcesso === tokenAcesso;
 
   function fecharEditor() { setEditor(null); requestAnimationFrame(() => origemEditor.current?.focus()); }
@@ -72,7 +75,7 @@ function GerenciarFontes({ tokenAcesso }: { tokenAcesso: string }) {
               <li key={fonte.id} className="gestao-record">
                 <Database className="gestao-record-icon" size={21} aria-hidden="true" />
                 <div className="gestao-record-content"><h3>{fonte.nome}</h3><p className={!fonte.descricao ? 'gestao-no-description' : ''}>{fonte.descricao || 'Sem descrição'}</p><span className="gestao-record-meta">Fonte criada em <time dateTime={fonte.criadoEm}>{data.format(new Date(fonte.criadoEm))}</time></span></div>
-                <div className="gestao-record-actions gestao-source-actions"><button className="gestao-button gestao-index-button" disabled title="Envio de documentos indisponível"><UploadCloud size={16} aria-hidden="true" />Indexar documentos</button><button className="gestao-icon-button" disabled={bloqueado} aria-label={`Editar fonte ${fonte.nome}`} onClick={e => abrirEditor(fonte, e.currentTarget)}><Pencil size={17} /></button><button className="gestao-icon-button gestao-delete" disabled={bloqueado} aria-label={`Excluir fonte ${fonte.nome}`} onClick={() => { setMensagem(''); setExclusao(fonte); }}><Trash2 size={17} /></button></div>
+                <div className="gestao-record-actions gestao-source-actions"><button className="gestao-button gestao-index-button" disabled={bloqueado} aria-label={`Indexar documentos na fonte ${fonte.nome}`} onClick={e => { origemIndexacao.current = e.currentTarget; setIndexacao(fonte); }}><UploadCloud size={16} aria-hidden="true" />Indexar documentos</button><button className="gestao-icon-button" disabled={bloqueado} aria-label={`Editar fonte ${fonte.nome}`} onClick={e => abrirEditor(fonte, e.currentTarget)}><Pencil size={17} /></button><button className="gestao-icon-button gestao-delete" disabled={bloqueado} aria-label={`Excluir fonte ${fonte.nome}`} onClick={() => { setMensagem(''); setExclusao(fonte); }}><Trash2 size={17} /></button></div>
               </li>
             ))}</ul>
           )}
@@ -80,6 +83,7 @@ function GerenciarFontes({ tokenAcesso }: { tokenAcesso: string }) {
         {editor && <EditorCadastro key={editor === 'nova' ? 'nova' : editor.id} titulo={editor === 'nova' ? 'Nova fonte de dados' : 'Editar fonte de dados'} ajuda="Escolha um nome que ajude a reconhecer o conteúdo desta fonte." comDescricao limiteNome={100} limiteDescricao={250} nomeInicial={editor === 'nova' ? '' : editor.nome} descricaoInicial={editor === 'nova' ? '' : editor.descricao} acao={editor === 'nova' ? 'Criar fonte' : 'Salvar alterações'} aoFechar={fecharEditor} aoSalvar={salvar} />}
       </div>
       {exclusao && <ConfirmarExclusao tipo="fonte" nome={exclusao.nome} aoCancelar={() => setExclusao(null)} aoConfirmar={excluir} />}
+      {indexacao && <ModalIndexacao fonte={indexacao} aoIndexar={indexarArquivos} aoFechar={() => { setIndexacao(null); requestAnimationFrame(() => origemIndexacao.current?.focus()); }} />}
     </div>
   );
 }

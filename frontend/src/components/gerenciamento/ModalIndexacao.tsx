@@ -1,51 +1,67 @@
-import { useEffect, useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useEffect, useId, useRef, useState, type DragEvent } from 'react';
 import { Archive, Check, FileText, UploadCloud, X } from 'lucide-react';
-import type { DocumentoIndexado, FonteDados } from '../../store/useGerenciamentoStore';
-
-const EXTENSOES = ['xls', 'xlsx', 'doc', 'docx', 'ppt', 'pptx', 'pdf', 'txt', 'zip', 'rar'];
-const ACCEPT = EXTENSOES.map(extensao => `.${extensao}`).join(',');
+import type { FonteDados } from '../../store/useGerenciamentoStore';
+import type { IndexarArquivos, ResultadoEnvioIndexacao } from '../../store/useFontesDadosStore';
+import { arquivoEhZip, extrairMensagemErro, FORMATOS_INDEXACAO, validarArquivoIndexacao } from '../../services/api';
 
 interface Props {
   fonte?: FonteDados;
   fontes?: FonteDados[];
   aoFechar: () => void;
-  aoIndexar: (fonteId: string, nomes: string[]) => DocumentoIndexado[];
+  aoIndexar: IndexarArquivos;
 }
 
-function extensao(nome: string) {
-  return nome.includes('.') ? nome.split('.').pop()?.toLocaleLowerCase('pt-BR') ?? '' : '';
+interface ArquivoSelecionado {
+  arquivo: File;
+  resultado?: ResultadoEnvioIndexacao;
+}
+
+function tamanhoArquivo(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const megabytes = bytes >= 1024 * 1024;
+  return `${(bytes / (megabytes ? 1024 * 1024 : 1024)).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} ${megabytes ? 'MB' : 'KB'}`;
 }
 
 export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const campo = useRef<HTMLInputElement>(null);
+  const ativo = useRef(false);
+  const enviando = useRef(false);
   const tituloId = useId();
   const descricaoId = useId();
-  const [arquivos, setArquivos] = useState<File[]>([]);
+  const [arquivos, setArquivos] = useState<ArquivoSelecionado[]>([]);
   const [arrastando, setArrastando] = useState(false);
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState('');
-  const [concluidos, setConcluidos] = useState<string[]>([]);
   const [fonteId, setFonteId] = useState(fonte?.id ?? '');
   const fonteSelecionada = fonte ?? fontes.find(item => item.id === fonteId);
+  const aceitos = arquivos.filter(item => item.resultado?.status === 'aceito').length;
+  const falhas = arquivos.filter(item => item.resultado?.status === 'erro').length;
+  const pendentes = arquivos.map((item, indice) => ({ ...item, indice })).filter(item => item.resultado?.status !== 'aceito');
 
   useEffect(() => {
     const elemento = dialogo.current;
+    ativo.current = true;
     elemento?.showModal();
-    return () => elemento?.close();
+    return () => { ativo.current = false; elemento?.close(); };
   }, []);
 
-  function selecionar(lista: FileList | null) {
-    if (!lista) return;
+  function limpar() {
+    setArquivos([]);
     setErro('');
-    setConcluidos([]);
+    if (campo.current) campo.current.value = '';
+  }
+
+  function selecionar(lista: FileList | null) {
+    if (enviando.current || !lista?.length) return;
     const recebidos = Array.from(lista);
-    const invalidos = recebidos.filter(arquivo => !EXTENSOES.includes(extensao(arquivo.name)));
-    if (invalidos.length) {
-      setErro(`${invalidos.length === 1 ? 'Este arquivo não é compatível' : 'Alguns arquivos não são compatíveis'}: ${invalidos.map(arquivo => arquivo.name).join(', ')}.`);
-      return;
+    limpar();
+    try {
+      recebidos.forEach(validarArquivoIndexacao);
+      setArquivos(recebidos.map(arquivo => ({ arquivo })));
+    } catch (e) {
+      setErro(extrairMensagemErro(e, 'Não foi possível selecionar os arquivos.'));
     }
-    setArquivos(recebidos);
   }
 
   function soltar(evento: DragEvent<HTMLDivElement>) {
@@ -55,45 +71,60 @@ export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Prop
   }
 
   async function indexar() {
-    if (!arquivos.length || !fonteSelecionada) return;
+    if (enviando.current || !pendentes.length || !fonteSelecionada) return;
+    enviando.current = true;
     setErro('');
     setProcessando(true);
-    await new Promise(resolve => window.setTimeout(resolve, 650));
     try {
-      const registrados = aoIndexar(fonteSelecionada.id, arquivos.map(arquivo => arquivo.name));
-      setConcluidos(registrados.map(documento => documento.nome));
-      setArquivos([]);
-      if (campo.current) campo.current.value = '';
+      await aoIndexar(fonteSelecionada.id, pendentes.map(item => item.arquivo), (indice, resultado) => {
+        if (!ativo.current) return;
+        const original = pendentes[indice].indice;
+        setArquivos(anteriores => anteriores.map((item, posicao) => posicao === original ? { ...item, resultado } : item));
+      });
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível registrar os documentos. Tente novamente.');
+      if (ativo.current) setErro(extrairMensagemErro(e, 'Não foi possível enviar os documentos. Tente novamente.'));
     } finally {
-      setProcessando(false);
+      enviando.current = false;
+      if (ativo.current) setProcessando(false);
     }
   }
 
   return (
-    <dialog ref={dialogo} className="gestao-dialog gestao-index-dialog" aria-labelledby={tituloId} aria-describedby={descricaoId} onCancel={evento => { evento.preventDefault(); if (!processando) aoFechar(); }}>
+    <dialog ref={dialogo} className="gestao-dialog gestao-index-dialog" aria-labelledby={tituloId} aria-describedby={descricaoId} onCancel={evento => { evento.preventDefault(); if (!enviando.current) aoFechar(); }}>
       <div className="gestao-index-header">
         <div><h2 id={tituloId}>Indexar documentos</h2><p id={descricaoId}>{fonte ? <>Adicione conteúdo à fonte <strong>{fonte.nome}</strong>.</> : 'Escolha a fonte de dados que receberá os documentos.'}</p></div>
         <button className="gestao-icon-button" aria-label="Fechar indexação" disabled={processando} onClick={aoFechar}><X size={20} /></button>
       </div>
 
-
-      {!fonte && <div className="gestao-index-source"><label htmlFor={`${tituloId}-fonte`}>Fonte de dados</label><select id={`${tituloId}-fonte`} value={fonteId} onChange={evento => { setFonteId(evento.target.value); setConcluidos([]); }} disabled={processando}><option value="">Selecione uma fonte</option>{fontes.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}</select>{!fontes.length && <p>Crie uma fonte de dados antes de indexar documentos.</p>}</div>}
-      <div className={`gestao-dropzone${arrastando ? ' is-dragging' : ''}`} onDragEnter={evento => { evento.preventDefault(); setArrastando(true); }} onDragOver={evento => evento.preventDefault()} onDragLeave={() => setArrastando(false)} onDrop={soltar}>
+      {!fonte && <div className="gestao-index-source"><label htmlFor={`${tituloId}-fonte`}>Fonte de dados</label><select id={`${tituloId}-fonte`} value={fonteId} onChange={evento => { setFonteId(evento.target.value); limpar(); }} disabled={processando || aceitos > 0}><option value="">Selecione uma fonte</option>{fontes.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}</select>{!fontes.length && <p>Crie uma fonte de dados antes de indexar documentos.</p>}</div>}
+      <div className={`gestao-dropzone${arquivos.length ? ' has-selection' : ''}${arrastando ? ' is-dragging' : ''}`} onDragEnter={evento => { evento.preventDefault(); if (!enviando.current) setArrastando(true); }} onDragOver={evento => evento.preventDefault()} onDragLeave={() => setArrastando(false)} onDrop={soltar}>
         <UploadCloud size={30} strokeWidth={1.6} aria-hidden="true" />
         <strong>Arraste os arquivos para cá</strong>
         <span>ou escolha no seu dispositivo</span>
-        <button type="button" className="gestao-button" onClick={() => campo.current?.click()}>Escolher arquivos</button>
-        <input ref={campo} className="gestao-file-input" type="file" multiple accept={ACCEPT} onChange={(evento: ChangeEvent<HTMLInputElement>) => selecionar(evento.target.files)} />
+        <button type="button" className="gestao-button" disabled={processando} onClick={() => campo.current?.click()}>{aceitos ? 'Escolher novos arquivos' : 'Escolher arquivos'}</button>
+        <input ref={campo} className="gestao-file-input" aria-label="Arquivos para indexação" type="file" multiple accept={FORMATOS_INDEXACAO.map(formato => `.${formato}`).join(',')} disabled={processando} onChange={evento => selecionar(evento.target.files)} />
       </div>
-      <p className="gestao-index-formats">Formatos aceitos: XLS, XLSX, DOC, DOCX, PPT, PPTX, PDF, TXT, ZIP e RAR.</p>
+      <p className="gestao-index-formats">PDF, TXT, PNG, JPG e JPEG. Para enviar um lote, use um ZIP com esses formatos, sem senha.</p>
 
-      {arquivos.length > 0 && <div className="gestao-index-selection"><div><strong>{arquivos.length} {arquivos.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}</strong><button type="button" onClick={() => { setArquivos([]); if (campo.current) campo.current.value = ''; }}>Limpar</button></div><ul>{arquivos.map(arquivo => <li key={`${arquivo.name}-${arquivo.lastModified}`}><span className="gestao-file-kind">{['zip', 'rar'].includes(extensao(arquivo.name)) ? <Archive size={16} /> : <FileText size={16} />}</span><span>{arquivo.name}</span><small>{(arquivo.size / 1024 / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB</small></li>)}</ul></div>}
-      {concluidos.length > 0 && <div className="gestao-index-success" role="status"><Check size={18} aria-hidden="true" /><p><strong>{concluidos.length === 1 ? 'Documento adicionado' : 'Documentos adicionados'} à fonte.</strong><span>A indexação real ocorrerá em segundo plano quando a API estiver conectada.</span></p></div>}
+      {arquivos.length > 0 && <section className="gestao-index-selection" aria-label="Arquivos selecionados" aria-busy={processando}>
+        <div><strong>{arquivos.length} {arquivos.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}</strong><button type="button" disabled={processando} onClick={limpar}>Limpar seleção</button></div>
+        <ul>{arquivos.map(({ arquivo, resultado }, indice) => <li key={indice}>
+          <span className="gestao-file-kind" aria-hidden="true">{arquivoEhZip(arquivo) ? <Archive size={16} /> : <FileText size={16} />}</span>
+          <div className="gestao-file-content"><span>{arquivo.name}</span>
+            <span className={`gestao-file-status${resultado?.status === 'erro' ? ' gestao-file-error' : ''}${resultado?.status === 'aceito' ? ' gestao-file-accepted' : ''}`}>
+              {!resultado ? 'Pronto para enviar' : resultado.status === 'enviando' ? 'Enviando…' : resultado.status === 'erro' ? resultado.mensagem : <>Enviado para processamento{'quantidade_arquivos' in resultado.resposta ? ` · ${resultado.resposta.quantidade_arquivos} documentos no ZIP` : ''}</>}
+            </span>
+          </div>
+          <small>{tamanhoArquivo(arquivo.size)}</small>
+        </li>)}</ul>
+      </section>}
+      <div className="gestao-index-feedback" role="status" aria-live="polite">
+        {processando ? 'Enviando arquivos. Aguarde a confirmação de cada envio…' : falhas > 0 ? `${falhas} ${falhas === 1 ? 'envio falhou' : 'envios falharam'}. Tente reenviar os arquivos com erro.` : ''}
+      </div>
+      {aceitos > 0 && <div className="gestao-index-success" role="status"><Check size={18} aria-hidden="true" /><p><strong>{aceitos} {aceitos === 1 ? 'arquivo enviado' : 'arquivos enviados'} para processamento.</strong><span>A indexação ocorre em segundo plano. A confirmação de envio ainda não indica que os documentos estão disponíveis para busca.</span></p></div>}
       {erro && <p className="gestao-error" role="alert">{erro}</p>}
 
-      <div className="gestao-form-actions"><button type="button" className="gestao-button" disabled={processando} onClick={aoFechar}>{concluidos.length ? 'Concluir' : 'Cancelar'}</button><button type="button" className="gestao-button gestao-button-primary" disabled={!fonteSelecionada || !arquivos.length || processando} onClick={indexar}>{processando ? 'Preparando…' : `Indexar${arquivos.length ? ` ${arquivos.length}` : ''}`}</button></div>
+      <div className="gestao-form-actions"><button type="button" className="gestao-button" disabled={processando} onClick={aoFechar}>{aceitos ? 'Fechar' : 'Cancelar'}</button><button type="button" className="gestao-button gestao-button-primary" disabled={!fonteSelecionada || !pendentes.length || processando} onClick={() => void indexar()}>{processando ? 'Enviando…' : `${falhas ? 'Reenviar' : 'Indexar'}${pendentes.length ? ` ${pendentes.length}` : ''}`}</button></div>
     </dialog>
   );
 }

@@ -1,12 +1,24 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
-import { api, extrairMensagemErro, type DadosFonteDados, type FonteDadosBackend } from '../services/api';
+import { api, arquivoEhZip, extrairMensagemErro, validarArquivoIndexacao, type DadosFonteDados, type FonteDadosBackend, type IndexacaoDocumento, type IndexacaoLote } from '../services/api';
 import { useAutenticacaoStore } from './useAutenticacaoStore';
 import { useChaveConsumoStore } from './useChaveConsumoStore';
 import { identificarConta, type FonteDados } from './useGerenciamentoStore';
 
-type ClienteFontes = Pick<typeof api, 'listarFontesDados' | 'criarFonteDados' | 'atualizarFonteDados' | 'excluirFonteDados'>;
+type ClienteFontes = Pick<typeof api, 'listarFontesDados' | 'criarFonteDados' | 'atualizarFonteDados' | 'excluirFonteDados' | 'indexarDocumento' | 'indexarLoteZip'>;
 type Sessao = Pick<ReturnType<typeof useAutenticacaoStore.getState>, 'usuario' | 'tokenAcesso'>;
+
+export type ResultadoEnvioIndexacao =
+  | { status: 'enviando' }
+  | { status: 'aceito'; resposta: IndexacaoDocumento | IndexacaoLote }
+  | { status: 'erro'; mensagem: string };
+
+export type IndexarArquivos = (
+  id: string,
+  arquivos: File[],
+  aoAtualizar: (indice: number, resultado: ResultadoEnvioIndexacao) => void,
+) => Promise<boolean>;
+
 interface EstadoFontesDados {
   fontes: FonteDados[];
   carregando: boolean;
@@ -14,6 +26,7 @@ interface EstadoFontesDados {
   carregar: () => Promise<void>;
   salvarFonte: (dados: DadosFonteDados, id?: string) => Promise<FonteDados | undefined>;
   excluirFonte: (id: string) => Promise<boolean>;
+  indexarArquivos: IndexarArquivos;
   limpar: () => void;
 }
 
@@ -99,6 +112,29 @@ export function criarStoreFontesDados(
         if (!ctx.atual()) return false;
         leitura++;
         set({ fontes: get().fontes.filter(f => f.id !== id), carregando: false });
+        return true;
+      },
+      indexarArquivos: async (id, arquivos, aoAtualizar) => {
+        const ctx = contexto();
+        if (get().carregando || get().erroLeitura) throw new Error('Carregue suas fontes antes de indexar.');
+        const fonteId = validarId(id, ctx.conta);
+        arquivos.forEach(validarArquivoIndexacao);
+        for (const [indice, arquivo] of arquivos.entries()) {
+          // Nunca enviar o restante de uma seleção com as credenciais de outra sessão.
+          if (!ctx.atual()) return false;
+          aoAtualizar(indice, { status: 'enviando' });
+          try {
+            const resposta = arquivoEhZip(arquivo)
+              ? await cliente.indexarLoteZip(fonteId, arquivo)
+              : await cliente.indexarDocumento(fonteId, arquivo);
+            if (!ctx.atual()) return false;
+            aoAtualizar(indice, { status: 'aceito', resposta });
+          } catch (erro) {
+            if (!ctx.atual()) return false;
+            aoAtualizar(indice, { status: 'erro', mensagem: extrairMensagemErro(erro, 'Não foi possível enviar este arquivo. Tente novamente.') });
+          }
+        }
+        // Enfileiramento não comprova a indexação: não adicionar documentos ao CRUD.
         return true;
       },
     };

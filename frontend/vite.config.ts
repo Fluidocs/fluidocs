@@ -52,6 +52,10 @@ export default defineConfig(({mode}) => {
           target: alvoProxyApi,
           changeOrigin: true,
         },
+        '/indexar': {
+          target: alvoProxyApi,
+          changeOrigin: true,
+        },
         '/api': {
           target: alvoProxyApi,
           changeOrigin: true,
