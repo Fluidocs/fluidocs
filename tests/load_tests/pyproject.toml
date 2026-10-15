@@ -1,0 +1,22 @@
+[project]
+name = "fluidocs-load-tests"
+version = "0.1.0"
+description = "Cenários Locust para medir os percentis HTTP do Fluidocs"
+requires-python = ">=3.13"
+dependencies = ["locust>=2.46.7,<3"]
+
+[tool.uv]
+package = false
+
+[tool.locust]
+locustfile = "locustfile.py"
+host = "http://localhost:8000"
+web-host = "127.0.0.1"
+users = 5
+spawn-rate = 1
+run-time = "1m"
+stop-timeout = 130
+reset-stats = true
+csv = "results/fluidocs"
+csv-full-history = true
+html = "results/fluidocs.html"
