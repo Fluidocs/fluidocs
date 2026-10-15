@@ -160,6 +160,7 @@
 .chat-alerta { margin: 8px 24px; padding: 12px 16px; border-radius: 8px; background: var(--g-danger-bg); color: var(--g-danger); font-size: 12px; }
 .chat-alerta button { display: block; text-decoration: underline; margin-top: 8px; }
 .chat-area-compositor .chat-alerta { margin: 0 0 12px; }
+.chat-status { margin: 0 0 12px; color: var(--chat-ink); font-size: 14px; line-height: 1.5; }
 .chat-renomear { width: min(calc(100% - 48px), 720px); margin: 0 auto 12px; padding: 12px 16px; background: var(--chat-sidebar); border-radius: 10px; }
 .chat-renomear label { display: block; font-size: 12px; margin-bottom: 6px; }
 .chat-renomear > div { display: flex; gap: 8px; }

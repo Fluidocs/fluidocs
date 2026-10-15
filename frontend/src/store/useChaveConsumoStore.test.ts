@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useAutenticacaoStore } from './useAutenticacaoStore';
 import { useChaveConsumoStore } from './useChaveConsumoStore';
 import { fontesConsumoStore } from './useFontesDadosStore';
+import { consumoStore } from './useConsumoStore';
 import { buscaStore } from './useBuscaStore';
 import { api } from '../services/api';
 
@@ -27,10 +28,12 @@ describe('chave usada no módulo de consumo', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { resolver = resolve; })));
     const pesquisa = buscaStore.getState().pesquisar('manual', [{ id: '12', nome: 'Manual' }]);
     fontesConsumoStore.setState({ erroLeitura: 'Erro anterior' });
+    consumoStore.setState({ erroLeitura: 'Erro anterior' });
     useChaveConsumoStore.getState().usar('outra-chave-ficticia');
     resolver(Response.json({ dados: [] })); await pesquisa;
     expect(buscaStore.getState().pesquisa).toBeNull();
     expect(fontesConsumoStore.getState().erroLeitura).toBe('');
+    expect(consumoStore.getState().erroLeitura).toBe('');
   });
   it('recusa consumo sem chave antes de fazer a requisição', async () => {
     const buscar = vi.fn(); vi.stubGlobal('fetch', buscar);

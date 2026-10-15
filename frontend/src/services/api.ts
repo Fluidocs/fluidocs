@@ -1,4 +1,3 @@
-import { DadosArquivo } from '../tipos';
 import { useAutenticacaoStore, type Usuario } from '../store/useAutenticacaoStore';
 import { useChaveConsumoStore } from '../store/useChaveConsumoStore';
 
@@ -91,27 +90,38 @@ export interface RespostaPesquisa {
   resultados: DocumentoPesquisa[];
 }
 
+export interface AnexoConversaBackend {
+  id: number; mensagem_id: number; nome: string; extensao: string;
+}
+export interface MensagemConversaBackend {
+  id: number; conversa_id: number; conteudo: string; papel: 'U' | 'A';
+  data_envio: string; anexos: AnexoConversaBackend[];
+}
+export interface ConversaResumoBackend {
+  id: number; titulo: string; data_criacao: string; data_ultima_interacao: string;
+}
+export interface ConversaDetalheBackend extends ConversaResumoBackend {
+  mensagens: MensagemConversaBackend[];
+}
+export interface ListaConversasBackend {
+  conversas: ConversaResumoBackend[]; pagina: number; paginas: number;
+}
+interface RespostaConversaBackend {
+  conversa_id: number;
+  resposta: string;
+  anexos: AnexoConversaBackend[];
+}
+
+function validarIdConversa(id: number): void {
+  if (!Number.isSafeInteger(id) || id < 1) throw new Error('Selecione uma conversa válida.');
+}
+
 export interface DocumentoPesquisa {
   fonte_dados_id: number;
   documento_id: string;
   nome_documento: string;
   pontuacao: number;
   trechos: Array<{ id_trecho: number | null; conteudo: string | null; pontuacao: number }>;
-}
-
-export interface MensagemResposta {
-  id: string;
-  papel: 'assistant' | 'user';
-  conteudo: string;
-  timestamp: number;
-  anexos?: DadosArquivo[];
-}
-
-export interface SessaoChat {
-  id: string;
-  titulo: string;
-  mensagens: MensagemResposta[];
-  atualizadoEm: number;
 }
 
 export interface RepositorioBackend {
@@ -157,36 +167,6 @@ interface PaginacaoOpenAPI {
   pagina: number;
   por_pagina: number;
   paginas: number;
-}
-
-interface MensagemHistoricoOpenAPI {
-  papel: string;
-  conteudo: unknown;
-}
-
-interface ConversaOpenAPI {
-  id: number;
-  titulo: string;
-  historico: MensagemHistoricoOpenAPI[];
-}
-
-interface TrechoAgenteOpenAPI {
-  id_trecho: number;
-  pontuacao: number;
-  conteudo: string;
-}
-
-interface DocumentoAgenteOpenAPI {
-  nome_documento: string;
-  pontuacao: number;
-  trechos: TrechoAgenteOpenAPI[];
-}
-
-interface RespostaAgenteOpenAPI {
-  id_conversa: number;
-  pergunta: string;
-  resposta: unknown;
-  documentos: DocumentoAgenteOpenAPI[];
 }
 
 type RespostaRepositorio =
@@ -332,52 +312,6 @@ function extrairRepositorioDaResposta(resposta: RespostaRepositorio): Repositori
   }
 
   return normalizarRepositorioBackend(resposta);
-}
-
-function extrairTipoArquivo(nomeDocumento: string): string {
-  const partes = nomeDocumento.split('.');
-  return partes.length > 1 ? partes[partes.length - 1]?.toLowerCase() ?? 'arquivo' : 'arquivo';
-}
-
-export function normalizarConversa(conversa: ConversaOpenAPI): SessaoChat {
-  return {
-    id: String(conversa.id),
-    titulo: conversa.titulo.trim() || 'Nova conversa',
-    atualizadoEm: 0,
-    mensagens: conversa.historico.map((mensagem, indice) => ({
-      id: `${conversa.id}-${indice}`,
-      papel: mensagem.papel === 'usuario' ? 'user' : 'assistant',
-      conteudo:
-        typeof mensagem.conteudo === 'string'
-          ? mensagem.conteudo
-          : JSON.stringify(mensagem.conteudo),
-      timestamp: indice,
-    })),
-  };
-}
-
-export function normalizarRespostaAgente(resposta: RespostaAgenteOpenAPI): MensagemResposta {
-  const anexos = resposta.documentos.flatMap((documento) =>
-    documento.trechos.map((trecho) => ({
-      id: trecho.id_trecho,
-      titulo: documento.nome_documento,
-      tipo: extrairTipoArquivo(documento.nome_documento),
-      repositorio: '',
-      pontuacao: documento.pontuacao,
-      trecho: trecho.conteudo,
-    }))
-  );
-
-  return {
-    id: `${resposta.id_conversa}-resposta-${Date.now()}`,
-    papel: 'assistant',
-    conteudo:
-      typeof resposta.resposta === 'string'
-        ? resposta.resposta
-        : JSON.stringify(resposta.resposta),
-    timestamp: Date.now(),
-    anexos: anexos.length > 0 ? anexos : undefined,
-  };
 }
 
 async function executarRequisicao<T>(
@@ -678,51 +612,56 @@ export const api = {
     });
   },
 
-  listarChats: async (): Promise<SessaoChat[]> => {
-    const resposta = await executarRequisicao<BaseResponse<ConversaOpenAPI[]>>(
-      '/agente/conversas/'
+  listarConversas: async (pagina = 1): Promise<ListaConversasBackend> => {
+    if (!Number.isSafeInteger(pagina) || pagina < 1) throw new Error('Página de conversas inválida.');
+    const resposta = await executarConsumo<BaseResponse<ConversaResumoBackend[]>>(
+      `/conversas?pagina=${pagina}&por_pagina=20`, undefined,
     );
-    return resposta.dados.map(normalizarConversa);
+    return { conversas: resposta.dados, pagina: resposta.paginacao?.pagina ?? pagina,
+      paginas: resposta.paginacao?.paginas ?? 1 };
   },
 
-  criarChat: async (_titulo?: string): Promise<SessaoChat> => {
-    const resposta = await executarRequisicao<BaseResponse<ConversaOpenAPI>>(
-      '/agente/conversas/',
-      { method: 'POST' }
+  obterConversa: async (id: number): Promise<ConversaDetalheBackend> => {
+    validarIdConversa(id);
+    const resposta = await executarConsumo<BaseResponse<ConversaDetalheBackend>>(
+      `/conversas/${id}`, undefined,
     );
-    return normalizarConversa(resposta.dados);
+    return resposta.dados;
   },
 
-  consultarChat: async (id: string): Promise<SessaoChat> => {
-    const resposta = await executarRequisicao<BaseResponse<ConversaOpenAPI>>(
-      `/agente/conversas/${id}`
+  perguntarConversa: async (entrada: string, fonteIds: number[], id?: number): Promise<ConversaDetalheBackend> => {
+    const pergunta = entrada.trim();
+    if (!pergunta || pergunta.length > 2000) throw new Error('Use uma pergunta entre 1 e 2.000 caracteres.');
+    if (!fonteIds.length || fonteIds.some(fid => !Number.isSafeInteger(fid) || fid < 1)) {
+      throw new Error('Selecione ao menos uma fonte de dados válida para conversar.');
+    }
+    if (id !== undefined) validarIdConversa(id);
+    const chave = useChaveConsumoStore.getState().chave;
+    const resposta = await executarConsumo<BaseResponse<RespostaConversaBackend>>(
+      '/conversas/perguntar', { method: 'POST', body: JSON.stringify({
+        pergunta, fonte_dados_ids: [...new Set(fonteIds)], ...(id !== undefined ? { conversa_id: id } : {}),
+      }) },
+      chave,
     );
-    return normalizarConversa(resposta.dados);
+    if (useChaveConsumoStore.getState().chave !== chave) throw new Error('A chave de API foi alterada durante o envio.');
+    const detalhe = await executarConsumo<BaseResponse<ConversaDetalheBackend>>(
+      `/conversas/${resposta.dados.conversa_id}`, undefined, chave,
+    );
+    return detalhe.dados;
   },
 
-  deletarChat: async (id: string): Promise<void> => {
-    await executarRequisicao<BaseResponse<null>>(`/agente/conversas/${id}`, {
-      method: 'DELETE',
-    });
+  renomearConversa: async (id: number, entrada: string): Promise<ConversaResumoBackend> => {
+    validarIdConversa(id);
+    const titulo = entrada.trim();
+    if (!titulo || titulo.length > 255) throw new Error('Use um título entre 1 e 255 caracteres.');
+    const resposta = await executarConsumo<BaseResponse<ConversaResumoBackend>>(
+      `/conversas/${id}`, { method: 'PATCH', body: JSON.stringify({ titulo }) },
+    );
+    return resposta.dados;
   },
 
-  enviarMensagemChat: async (
-    idChat: string,
-    conteudo: string,
-    idRepositorio: string | string[]
-  ): Promise<MensagemResposta> => {
-    const repositorio = Array.isArray(idRepositorio) ? idRepositorio[0] : idRepositorio;
-    const resposta = await executarRequisicao<BaseResponse<RespostaAgenteOpenAPI>>(
-      `/agente/conversas/${idChat}/conversar`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          pergunta: conteudo,
-          id_repositorio: Number(repositorio),
-        }),
-      }
-    );
-
-    return normalizarRespostaAgente(resposta.dados);
+  excluirConversa: async (id: number): Promise<void> => {
+    validarIdConversa(id);
+    await executarConsumo(`/conversas/${id}`, { method: 'DELETE' });
   },
 };

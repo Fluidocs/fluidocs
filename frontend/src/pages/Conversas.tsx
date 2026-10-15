@@ -5,6 +5,7 @@ import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { identificarConta } from '../store/useGerenciamentoStore';
 import { useFontesConsumoStore } from '../store/useFontesDadosStore';
 import { useConsumoStore } from '../store/useConsumoStore';
+import { extrairMensagemErro } from '../services/api';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
 import { BarraLateralChat } from '../components/chat/BarraLateralChat';
 import { CompositorChat } from '../components/chat/CompositorChat';
@@ -16,7 +17,8 @@ export function Conversas() {
   const sair = useAutenticacaoStore(s => s.sair);
   const conta = identificarConta(usuario);
   const { fontes, erroLeitura: erroFontes, carregando: carregandoFontes, carregar: carregarFontes } = useFontesConsumoStore(s => s);
-  const { conversas, iniciar, enviar, renomear, excluir, carregar, erroLeitura } = useConsumoStore(s => s);
+  const { conversas, iniciar, enviar, renomear, excluir, carregar, detalhar, erroLeitura,
+    carregando, detalhandoId, erroDetalhe, enviando, alterando, pagina, paginas } = useConsumoStore(s => s);
   const [parametros, setParametros] = useSearchParams();
   const id = parametros.get('conversa');
   const minhasFontes = fontes.filter(f => f.conta === conta);
@@ -34,11 +36,21 @@ export function Conversas() {
   const campo = useRef<HTMLTextAreaElement>(null);
   const historicoBotao = useRef<HTMLButtonElement>(null);
   const acoes = useRef<HTMLDetailsElement>(null);
+  const contextoVisual = useRef(0);
   const idsValidos = selecionadas.filter(fid => minhasFontes.some(f => f.id === fid));
   const fonteIndisponivel = !!ativa?.fontes.some(f => !minhasFontes.some(atual => atual.id === f.id));
-  const bloqueado = carregandoFontes || !!erroFontes || !!erroLeitura || fonteIndisponivel || (!!id && !ativa) || (!ativa && !idsValidos.length);
+  const fontesFixas = ativa?.fontes.length ? ativa.fontes : undefined;
+  const carregandoDetalhe = !!id && (detalhandoId === id || (!ativa?.detalhada && !erroDetalhe));
+  const fontesAntigas = !!ativa?.detalhada && !ativa.fontes.length && ativa.mensagens.length > 0;
+  const bloqueado = enviando || alterando || carregandoDetalhe || carregandoFontes || !!erroFontes ||
+    !!erroLeitura || (!!id && !!erroDetalhe) || fonteIndisponivel || fontesAntigas || (!!id && !ativa) || (!fontesFixas && !idsValidos.length);
 
-  useEffect(() => { setEntrada(''); setErro(''); setEditando(false); setExclusao(false); if (acoes.current) acoes.current.open = false; }, [id]);
+  useEffect(() => {
+    setEntrada(''); setErro(''); setEditando(false); setExclusao(false);
+    if (acoes.current) acoes.current.open = false;
+    return () => { contextoVisual.current++; };
+  }, [id]);
+  useEffect(() => { if (id && !carregando && !enviando && !alterando) void detalhar(id); }, [id, carregando, enviando, alterando, ativa?.detalhada, detalhar]);
   useEffect(() => { setSelecionadas(ids => ids.filter(fid => fontes.some(f => f.id === fid && f.conta === conta))); }, [fontes, conta]);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 760px)');
@@ -49,36 +61,54 @@ export function Conversas() {
 
   function fecharHistorico() { setHistoricoAberto(false); requestAnimationFrame(() => historicoBotao.current?.focus()); }
   function nova() {
+    contextoVisual.current++;
     setParametros({}); setSelecionadas([]); setEntrada(''); setErro(''); setAviso(''); setEditando(false); setExclusao(false);
     if (mobile) setHistoricoAberto(false);
     requestAnimationFrame(() => campo.current?.focus());
   }
   function selecionar(conversa: string) {
+    contextoVisual.current++;
     setParametros({ conversa }); setAviso('');
     if (mobile) setHistoricoAberto(false);
     requestAnimationFrame(() => campo.current?.focus());
   }
-  function enviarPergunta(e: FormEvent) {
+  async function enviarPergunta(e: FormEvent) {
     e.preventDefault();
     if (bloqueado || !entrada.trim()) return;
+    const versao = contextoVisual.current;
+    setErro(''); setAviso('');
     try {
-      if (ativa) enviar(conta, ativa.id, fontes, entrada);
-      else setParametros({ conversa: iniciar(conta, fontes, idsValidos, entrada) });
+      if (ativa) {
+        if (!await enviar(conta, ativa.id, fontes, entrada, idsValidos)) return;
+      } else {
+        const criada = await iniciar(conta, fontes, idsValidos, entrada);
+        if (!criada || versao !== contextoVisual.current) return;
+        setParametros({ conversa: criada });
+      }
+      if (versao !== contextoVisual.current) return;
       setEntrada(''); setErro(''); setAviso('Resposta adicionada à conversa.');
       requestAnimationFrame(() => campo.current?.focus());
-    } catch (e) { setErro(e instanceof Error ? e.message : 'Não foi possível enviar. Tente novamente.'); }
+    } catch (e) {
+      if (versao === contextoVisual.current) setErro(extrairMensagemErro(e, 'Não foi possível enviar. Tente novamente.'));
+    }
   }
-  function salvarTitulo(e: FormEvent) {
+  async function salvarTitulo(e: FormEvent) {
     e.preventDefault();
-    if (!ativa) return;
-    try { renomear(conta, ativa.id, titulo); setEditando(false); setErro(''); setAviso('Título atualizado.'); }
-    catch (e) { setErro(e instanceof Error ? e.message : 'Não foi possível renomear.'); }
+    if (!ativa || enviando || alterando) return;
+    const versao = contextoVisual.current;
+    try {
+      if (await renomear(conta, ativa.id, titulo) && versao === contextoVisual.current) {
+        setEditando(false); setErro(''); setAviso('Título atualizado.');
+      }
+    } catch (e) {
+      if (versao === contextoVisual.current) setErro(extrairMensagemErro(e, 'Não foi possível renomear.'));
+    }
   }
 
   return <div className={`chat-app${historicoAberto && !mobile ? ' chat-com-sidebar' : ''}`}>
     <a className="chat-skip" href="#chat-conteudo">Pular para a conversa</a>
     <p className="chat-sr-only" role="status">{aviso}</p>
-    <BarraLateralChat aberto={historicoAberto} mobile={mobile} conversas={minhasConversas} ativaId={id} usuario={usuario} aoFechar={fecharHistorico} aoSelecionar={selecionar} aoCriar={nova} aoSair={sair} />
+    <BarraLateralChat aberto={historicoAberto} mobile={mobile} conversas={minhasConversas} ativaId={id} usuario={usuario} aoFechar={fecharHistorico} aoSelecionar={selecionar} aoCriar={nova} aoSair={sair} carregando={carregando} temMais={pagina < paginas} ocupado={enviando || alterando} aoCarregarMais={() => void carregar(true)} />
     <main id="chat-conteudo" className="chat-main" tabIndex={-1}>
       {ativa && <h1 className="chat-sr-only">{ativa.titulo}</h1>}
       <header className="chat-header">
@@ -91,25 +121,28 @@ export function Conversas() {
           <span className="chat-header-titulo" title={ativa.titulo}>{ativa.titulo}</span>
           <details className="chat-acoes" ref={acoes} onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
             <summary className="chat-icon" aria-label="Opções da conversa"><MoreHorizontal size={22} /></summary>
-            <div className="chat-acoes-menu"><button disabled={!!erroLeitura} onClick={() => { setTitulo(ativa.titulo); setEditando(true); setErro(''); if (acoes.current) acoes.current.open = false; }}><Pencil size={16} />Renomear conversa</button><button className="chat-danger" disabled={!!erroLeitura} onClick={() => { setExclusao(true); if (acoes.current) acoes.current.open = false; }}><Trash2 size={16} />Excluir conversa</button></div>
+            <div className="chat-acoes-menu"><button disabled={enviando || alterando || carregandoDetalhe} onClick={() => { setTitulo(ativa.titulo); setEditando(true); setErro(''); if (acoes.current) acoes.current.open = false; }}><Pencil size={16} />Renomear conversa</button><button className="chat-danger" disabled={enviando || alterando || carregandoDetalhe} onClick={() => { setExclusao(true); if (acoes.current) acoes.current.open = false; }}><Trash2 size={16} />Excluir conversa</button></div>
           </details>
         </>}
       </header>
       {erroFontes && <div className="chat-alerta" role="alert">{erroFontes}<button onClick={carregarFontes}>Recarregar fontes</button></div>}
       {carregandoFontes && <p className="chat-alerta" role="status">Carregando suas fontes…</p>}
-      {erroLeitura && <div className="chat-alerta" role="alert">{erroLeitura}<button onClick={carregar}>Recarregar conversas</button></div>}
-      {editando && <form className="chat-renomear" onSubmit={salvarTitulo}><label htmlFor="chat-titulo">Título da conversa</label><div><input id="chat-titulo" autoFocus required maxLength={80} value={titulo} onChange={e => setTitulo(e.target.value)} /><button className="chat-icon" aria-label="Salvar título"><Check size={18} /></button><button className="chat-icon" type="button" aria-label="Cancelar renomeação" onClick={() => { setEditando(false); setErro(''); }}><X size={18} /></button></div>{erro && <p role="alert">{erro}</p>}</form>}
-      {id && !ativa ? <div className="chat-indisponivel"><MessageSquare size={28} /><h1>Conversa indisponível</h1><p>Escolha uma conversa do histórico ou comece outra.</p><button className="chat-primary" onClick={nova}>Nova conversa</button></div> : <div className={`chat-corpo${ativa ? ' chat-em-andamento' : ' chat-inicial'}`}>
+      {erroLeitura && <div className="chat-alerta" role="alert">{erroLeitura}<button disabled={carregando || enviando || alterando} onClick={() => void carregar()}>Recarregar conversas</button></div>}
+      {id && erroDetalhe && <div className="chat-alerta" role="alert">{erroDetalhe}<button onClick={() => void detalhar(id, true)}>Recarregar mensagens</button></div>}
+      {editando && <form className="chat-renomear" onSubmit={salvarTitulo} aria-busy={alterando}><label htmlFor="chat-titulo">Título da conversa</label><div><input id="chat-titulo" autoFocus required maxLength={255} disabled={alterando} value={titulo} onChange={e => setTitulo(e.target.value)} /><button disabled={alterando} className="chat-icon" aria-label={alterando ? 'Salvando título' : 'Salvar título'}><Check size={18} /></button><button disabled={alterando} className="chat-icon" type="button" aria-label="Cancelar renomeação" onClick={() => { setEditando(false); setErro(''); }}><X size={18} /></button></div>{erro && <p role="alert">{erro}</p>}</form>}
+      {carregandoDetalhe ? <div className="chat-indisponivel" role="status"><MessageSquare size={28} /><p>Carregando mensagens…</p></div> : id && !ativa ? <div className="chat-indisponivel"><MessageSquare size={28} /><h1>Conversa indisponível</h1><p>Escolha uma conversa do histórico ou comece outra.</p><button className="chat-primary" onClick={nova}>Nova conversa</button></div> : <div className={`chat-corpo${ativa ? ' chat-em-andamento' : ' chat-inicial'}`}>
         {ativa ? <MensagensChat mensagens={ativa.mensagens} conversaId={ativa.id} /> : <div className="chat-boas-vindas"><h1>Vamos conversar com<br />seus documentos.</h1><p>O conhecimento já está nas suas fontes.<br className="chat-quebra-mobile" /> Encontre as respostas aqui.</p></div>}
         <div className="chat-area-compositor">
           {fonteIndisponivel && <p className="chat-alerta" role="alert">Uma fonte foi excluída. Inicie outra conversa para selecionar novas fontes.</p>}
+          {fontesAntigas && <p className="chat-alerta" role="alert">As fontes desta conversa não estão salvas neste navegador e a API não informa a seleção original. Inicie outra conversa para continuar.</p>}
+          {enviando && <p className="chat-status" role="status">Consultando seus documentos e preparando a resposta…</p>}
           {erro && !editando && <p className="chat-alerta" role="alert">{erro}</p>}
-          <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={ativa?.fontes} desabilitarFontes={carregandoFontes || !!erroFontes || !!erroLeitura} />
-          {!ativa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
+          <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} enviando={enviando} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={fontesFixas} desabilitarFontes={enviando || alterando || carregandoFontes || !!erroFontes || !!erroLeitura} />
+          {!ativa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} disabled={enviando || alterando} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
           <p className="chat-rodape">{ativa ? 'Confira as fontes. Respostas podem conter imprecisões.' : 'Selecione suas fontes de dados para começar.'}</p>
         </div>
       </div>}
     </main>
-    {exclusao && ativa && <ConfirmarExclusao tipo="conversa" nome={ativa.titulo} aoCancelar={() => setExclusao(false)} aoConfirmar={() => { excluir(conta, ativa.id); nova(); setAviso('Conversa excluída.'); }} />}
+    {exclusao && ativa && <ConfirmarExclusao tipo="conversa" nome={ativa.titulo} aoCancelar={() => setExclusao(false)} aoConfirmar={async () => { const versao = contextoVisual.current; if (await excluir(conta, ativa.id) && versao === contextoVisual.current) { nova(); setAviso('Conversa excluída.'); } }} />}
   </div>;
 }

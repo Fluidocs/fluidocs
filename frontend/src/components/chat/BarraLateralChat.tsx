@@ -9,8 +9,9 @@ import logo from '../../assets/prisma-norte-logo.svg';
 interface Props {
   aberto: boolean; mobile: boolean; conversas: ConversaConsumo[]; ativaId: string | null; usuario: Usuario;
   aoFechar: () => void; aoSelecionar: (id: string) => void; aoCriar: () => void; aoSair: () => void;
+  carregando: boolean; temMais: boolean; ocupado: boolean; aoCarregarMais: () => void;
 }
-export function BarraLateralChat({ aberto, mobile, conversas, ativaId, usuario, aoFechar, aoSelecionar, aoCriar, aoSair }: Props) {
+export function BarraLateralChat({ aberto, mobile, conversas, ativaId, usuario, aoFechar, aoSelecionar, aoCriar, aoSair, carregando, temMais, ocupado, aoCarregarMais }: Props) {
   const [busca, setBusca] = useState('');
   const dialogo = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -33,9 +34,11 @@ export function BarraLateralChat({ aberto, mobile, conversas, ativaId, usuario, 
     <div className="chat-busca"><Search size={15} aria-hidden="true" /><input type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar conversa" aria-label="Buscar conversas" /></div>
     <div className="chat-historico">
       {grupos.map(grupo => grupo.itens.length > 0 && <section key={grupo.titulo} aria-label={grupo.titulo}><h2>{grupo.titulo}</h2><ul>{grupo.itens.map(c => <li key={c.id}><button className={ativaId === c.id ? 'selecionada' : ''} aria-current={ativaId === c.id ? 'page' : undefined} title={c.titulo} onClick={() => aoSelecionar(c.id)}><MessageSquare size={15} aria-hidden="true" /><span>{c.titulo}</span></button></li>)}</ul></section>)}
-      {!filtradas.length && <div className="chat-historico-vazio"><MessageSquare size={20} aria-hidden="true" /><p>{busca ? 'Nenhuma conversa encontrada.' : 'Suas conversas ficam aqui.'}</p>{busca ? <button onClick={() => setBusca('')}>Limpar busca</button> : <span>Comece uma e retome quando quiser.</span>}</div>}
+      {!filtradas.length && !carregando && <div className="chat-historico-vazio"><MessageSquare size={20} aria-hidden="true" /><p>{busca ? 'Nenhuma conversa encontrada no histórico carregado.' : 'Suas conversas ficam aqui.'}</p>{busca ? <button onClick={() => setBusca('')}>Limpar busca</button> : <span>Comece uma e retome quando quiser.</span>}</div>}
+      {carregando && <p className="chat-historico-vazio" role="status">Carregando conversas…</p>}
+      {temMais && <button className="chat-nova" disabled={carregando || ocupado} onClick={aoCarregarMais}>Carregar mais conversas</button>}
     </div>
-    <div className="chat-sidebar-base"><Link to="/hub"><LayoutGrid size={17} />Trocar módulo</Link><div className="chat-conta"><span className="chat-avatar" aria-hidden="true">{usuario.nome.trim().slice(0, 1).toUpperCase()}</span><span className="chat-conta-nome">{usuario.nome}<small>Histórico neste navegador</small></span><AlternarTema /><button className="chat-icon" title="Sair" aria-label="Sair" onClick={aoSair}><LogOut size={17} /></button></div></div>
+    <div className="chat-sidebar-base"><Link to="/hub"><LayoutGrid size={17} />Trocar módulo</Link><div className="chat-conta"><span className="chat-avatar" aria-hidden="true">{usuario.nome.trim().slice(0, 1).toUpperCase()}</span><span className="chat-conta-nome">{usuario.nome}<small>Histórico da sua conta</small></span><AlternarTema /><button className="chat-icon" title="Sair" aria-label="Sair" onClick={aoSair}><LogOut size={17} /></button></div></div>
   </>;
   if (mobile) return <dialog ref={dialogo} id="chat-sidebar" className="chat-sidebar chat-sidebar-dialog" aria-label="Histórico e navegação" onCancel={e => { e.preventDefault(); aoFechar(); }} onClick={e => { if (e.target === e.currentTarget) { const r = e.currentTarget.getBoundingClientRect(); if (e.clientX > r.right || e.clientY > r.bottom) aoFechar(); } }}>{conteudo}</dialog>;
   return <aside id="chat-sidebar" className="chat-sidebar" hidden={!aberto} aria-label="Histórico e navegação">{conteudo}</aside>;
