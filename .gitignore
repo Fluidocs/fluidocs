@@ -329,15 +329,52 @@ sketch
 
 # End of https://www.toptal.com/developers/gitignore/api/python,node,react
 
-# Impeccable - temporary state
-# Local RTK history and diagnostic output (never version these files).
+### Ferramentas de IA ###
+# Instrucoes de agentes, inclusive em subdiretorios
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+
+# Configuracoes, skills, memoria e estado das ferramentas
+.agents/
+.codex/
+.claude/
+.cursor/
+.gemini/
+.continue/
+.opencode/
+.windsurf/
+.roo/
+.kilocode/
+.clinerules
+
+# Regras e configuracoes avulsas
+.cursorrules
+.cursorignore
+.cursorindexingignore
+.windsurfrules
+.clineignore
+.rooignore
+.roomodes
+.kilocodeignore
+.kilocodemodes
+.aider*
+.mcp.json
+.mcp.local.json
+opencode.json
+opencode.jsonc
+
+# Agentes, skills, hooks e instrucoes de IA no GitHub/Copilot
+.github/agents/
+.github/skills/
+.github/hooks/
+.github/instructions/
+.github/prompts/
+.github/chatmodes/
+.github/copilot-instructions.md
+
+# Configuracoes e artefatos gerados pelo Impeccable e pelo harness local
+.impeccable/
 .harness-local/
-
-# Questions / transient interaction state
-.impeccable/questions/
-
-# Generated review artifacts
-.impeccable/review/
-
-# Temporary mocks / decisions generated during a run
-.impeccable/mocks/
