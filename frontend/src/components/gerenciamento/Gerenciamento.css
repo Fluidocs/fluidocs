@@ -183,9 +183,24 @@
 .gestao-index-dialog > .gestao-form-actions { position: sticky; bottom: 0; margin: 24px 0 0; padding: 18px 28px 24px; background: var(--g-paper); }
 .gestao-source-actions { align-items: center; }
 .gestao-index-button { white-space: nowrap; margin-right: 6px; }
-.gestao-documents-trigger { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; padding: 3px 0; color: var(--g-accent); font-size: 11px; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
-.gestao-documents-trigger:hover:not(:disabled) { color: var(--g-ink); }
-.gestao-documents-dialog { max-width: 680px; padding: 0; overflow: hidden; }
+.gestao-documents-dialog { display: flex; flex-direction: column; max-width: 680px; padding: 0; overflow-y: auto; }
+.gestao-documents-dialog:not([open]) { display: none; }
+.gestao-documents-body { min-height: 120px; flex: 1; min-width: 0; overflow-y: auto; }
+.gestao-documents-body .gestao-empty { padding: 28px; }
+.gestao-documents-body .gestao-empty h3 { font-size: 17px; }
+.gestao-documents-body .gestao-empty p { margin-bottom: 16px; }
+.gestao-documents-confirm { margin: 0 28px; padding-top: 20px; border-top: 1px solid var(--g-line); overflow-wrap: anywhere; }
+.gestao-documents-confirm h3 { font-size: 15px; }
+.gestao-documents-confirm p { color: var(--g-muted); font-size: 13px; }
+.gestao-documents-confirm .gestao-error { color: var(--g-danger); }
+.gestao-documents-confirm .gestao-form-actions { border: 0; padding-top: 0; margin-top: 16px; }
+.gestao-documents-feedback { margin: 16px 28px 0; color: var(--g-success); font-size: 13px; overflow-wrap: anywhere; }
+.gestao-documents-feedback:empty { display: none; }
+.gestao-documents-footer { flex-shrink: 0; margin: 20px 0 0; padding: 18px 28px 24px; }
+.gestao-documents-dialog .gestao-button { min-height: 44px; }
+.gestao-documents-dialog .gestao-icon-button { width: 44px; height: 44px; }
+.gestao-documents-confirm .gestao-button-danger { background: #a8242b; border-color: #a8242b; color: #fff; }
+.gestao-documents-confirm .gestao-button-danger:hover:not(:disabled) { background: #8d1c23; border-color: #8d1c23; }
 .gestao-nav-action { display: flex; align-items: center; gap: 12px; flex-shrink: 0; width: 100%; min-height: 44px; margin-top: auto; padding: 10px 14px; border-radius: 10px; background: var(--chat-tint); color: var(--chat-accent); font-size: 13px; font-weight: 700; text-align: left; }
 .gestao-nav-action:hover { box-shadow: inset 0 0 0 1px var(--chat-accent); }
 .gestao-nav-action svg { flex-shrink: 0; }
@@ -199,7 +214,8 @@
 .gestao-documents-list li + li { border-top: 1px solid var(--g-line); }
 .gestao-documents-list svg { flex-shrink: 0; color: var(--g-accent); }
 .gestao-documents-list span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
-.gestao-documents-list time { flex-shrink: 0; color: var(--g-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.gestao-documents-dialog .gestao-document-remove { flex-shrink: 0; color: var(--g-danger); }
+.gestao-documents-dialog .gestao-document-remove:hover:not(:disabled) { background: var(--g-danger-bg); border-color: var(--g-danger); }
 
 @media (max-width: 1180px) {
   .gestao-main { padding: 40px 28px; }
@@ -240,7 +256,12 @@
   .gestao-index-feedback { margin-inline: 20px; }
   .gestao-documents-list { padding-inline: 20px; }
   .gestao-documents-list li { align-items: flex-start; flex-wrap: wrap; }
-  .gestao-documents-list time { width: 100%; padding-left: 30px; }
+  .gestao-documents-list span { flex-basis: calc(100% - 30px); }
+  .gestao-document-remove { margin-left: 30px; }
+  .gestao-documents-confirm { margin-inline: 20px; }
+  .gestao-documents-feedback { margin-inline: 20px; }
+  .gestao-documents-footer { padding-inline: 20px; }
+  .gestao-documents-body .gestao-empty { padding-inline: 20px; }
   .gestao-index-header { padding: 22px 20px 18px; }
   .gestao-index-note, .gestao-dropzone, .gestao-index-selection, .gestao-index-success { margin-left: 20px; margin-right: 20px; }
   .gestao-index-formats, .gestao-index-dialog > .gestao-error { margin-left: 20px !important; margin-right: 20px !important; }
@@ -326,6 +347,23 @@
 .gestao-alert { margin: 8px 24px; border: 0; border-radius: 8px; font-size: 12px; }
 .gestao-dialog { border-color: var(--chat-line); border-radius: 14px; background: var(--chat-bg); color: var(--chat-ink); box-shadow: 0 20px 60px #07132140; }
 
+.gestao-sources-list { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+.gestao-sources-list > .gestao-toolbar { padding: 0 0 20px; border-bottom: 0; }
+.gestao-source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 20px; list-style: none; padding: 0; margin: 0; }
+.gestao-source-card { display: flex; flex-direction: column; min-width: 0; padding: 20px; border: 1px solid var(--g-line); border-radius: 14px; background: var(--g-paper); overflow-wrap: anywhere; }
+.gestao-source-content { flex: 1; min-width: 0; }
+.gestao-source-heading { display: flex; align-items: flex-start; gap: 12px; }
+.gestao-source-heading > svg { flex-shrink: 0; margin-top: 2px; color: var(--g-accent); }
+.gestao-source-heading h3 { min-width: 0; font-size: 16px; letter-spacing: -.01em; }
+.gestao-source-description { margin-top: 12px; color: var(--g-muted); font-size: 13px; line-height: 1.75; white-space: pre-wrap; }
+.gestao-source-description.gestao-no-description { font-style: italic; }
+.gestao-source-meta { display: block; margin-top: 20px; color: var(--g-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.gestao-source-card .gestao-documents-trigger { align-self: flex-start; min-height: 44px; margin-top: 12px; }
+.gestao-source-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--g-line); }
+.gestao-source-card .gestao-index-button { flex: 1 1 170px; min-height: 44px; margin: 0; }
+.gestao-source-management { display: flex; gap: 4px; margin-left: auto; }
+.gestao-source-management .gestao-icon-button { width: 44px; height: 44px; }
+
 @media (max-width: 1180px) {
   .gestao-workspace-editing { grid-template-columns: minmax(0, 1fr); }
   .gestao-workspace-editing .gestao-editor { grid-row: 1; }
@@ -338,6 +376,7 @@
   .gestao-page-heading h1 { font-size: 25px; }
   .gestao-context { margin-top: 18px; }
   .gestao-toolbar { padding: 14px; }
+  .gestao-sources-list .gestao-search { flex-basis: 100%; }
   .gestao-record { padding: 18px 14px; }
   .gestao-empty { padding: 40px 20px; }
   .gestao-editor { padding: 18px; }

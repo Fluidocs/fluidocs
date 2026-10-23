@@ -41,6 +41,49 @@ describe('contrato HTTP das fontes de dados', () => {
     expect(JSON.parse(opcoes.body as string)).toEqual({ nome: 'RH', descricao: 'Políticas internas' });
   });
 
+  it('lista os nomes e UUIDs dos documentos no envelope real da fonte, sem exigir datas', async () => {
+    const documentos = [
+      { uuid: '0fcbb023-b7c8-45d8-baf9-7c4d7caec46e', nome_documento: 'manual.pdf', tipo_arquivo: 'pdf' },
+      { uuid: '716bd719-8b7a-4385-91c8-790ad1166253', nome_documento: 'manual.pdf', tipo_arquivo: null },
+    ];
+    fetchMock.mockResolvedValueOnce(Response.json({ dados: { documentos } }));
+    expect(await api.listarDocumentosFonte(12)).toEqual(documentos);
+    const [url, opcoes] = fetchMock.mock.calls[0];
+    expect(url).toBe('/fontes-dados/12/documentos');
+    expect(new Headers(opcoes.headers).get('Authorization')).toBe('Bearer jwt-ficticio');
+    expect(opcoes.credentials).toBe('include');
+    fetchMock.mockResolvedValueOnce(Response.json({ dados: { documentos: [] } }));
+    expect(await api.listarDocumentosFonte(12)).toEqual([]);
+  });
+
+  it('desindexa pelo UUID dentro da fonte e aguarda a confirmação do backend', async () => {
+    const documentoId = '0fcbb023-b7c8-45d8-baf9-7c4d7caec46e';
+    const resultado = { id: documentoId, tipo_documento: null, status: 'excluído', quantidade_trechos: 4 };
+    fetchMock.mockResolvedValueOnce(Response.json({ dados: resultado }));
+    expect(await api.desindexarDocumento(12, documentoId)).toEqual(resultado);
+    const [url, opcoes] = fetchMock.mock.calls[0];
+    expect(url).toBe(`/fontes-dados/12/documentos/${documentoId}`);
+    expect(opcoes.method).toBe('DELETE');
+    expect(opcoes.body).toBeUndefined();
+    expect(new Headers(opcoes.headers).get('Authorization')).toBe('Bearer jwt-ficticio');
+    expect(opcoes.credentials).toBe('include');
+  });
+
+  it('propaga falhas de listagem e de desindexação sem confirmar a remoção', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Sem conexão'));
+    await expect(api.listarDocumentosFonte(12)).rejects.toMatchObject({ status: 0 });
+    for (const status of [404, 409, 500]) {
+      fetchMock.mockResolvedValueOnce(Response.json({ detail: 'Não foi possível concluir a exclusão.' }, { status }));
+      await expect(api.desindexarDocumento(12, '0fcbb023-b7c8-45d8-baf9-7c4d7caec46e')).rejects.toMatchObject({ status });
+    }
+  });
+
+  it('encerra a sessão quando a listagem de documentos rejeita o JWT', async () => {
+    fetchMock.mockResolvedValueOnce(Response.json({ detail: 'Token inválido.' }, { status: 401 }));
+    await expect(api.listarDocumentosFonte(12)).rejects.toMatchObject({ status: 401 });
+    expect(useAutenticacaoStore.getState().tokenAcesso).toBeNull();
+  });
+
   it('envia descrição vazia como string e aceita 100/250 caracteres', async () => {
     fetchMock.mockImplementation(async () => Response.json({ dados: fonte }, { status: 201 }));
     await api.criarFonteDados({ nome: 'RH', descricao: '  ' });

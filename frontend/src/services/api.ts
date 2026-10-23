@@ -46,6 +46,19 @@ export interface DadosFonteDados {
   descricao: string;
 }
 
+export interface DocumentoFonte {
+  uuid: string;
+  tipo_arquivo: string | null;
+  nome_documento: string;
+}
+
+export interface DocumentoDesindexado {
+  id: string;
+  tipo_documento: string | null;
+  status: 'excluído';
+  quantidade_trechos: number;
+}
+
 export interface IndexacaoDocumento {
   id_processamento: string;
   nome_arquivo: string;
@@ -487,6 +500,22 @@ export const api = {
       `/fontes-dados/${id}`, { method: 'DELETE' },
       { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
     );
+  },
+
+  listarDocumentosFonte: async (fonteId: number): Promise<DocumentoFonte[]> => {
+    const resposta = await executarRequisicao<BaseResponse<{ documentos: DocumentoFonte[] }>>(
+      `/fontes-dados/${fonteId}/documentos`, undefined,
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados.documentos;
+  },
+
+  desindexarDocumento: async (fonteId: number, documentoId: string): Promise<DocumentoDesindexado> => {
+    const resposta = await executarRequisicao<BaseResponse<DocumentoDesindexado>>(
+      `/fontes-dados/${fonteId}/documentos/${encodeURIComponent(documentoId)}`, { method: 'DELETE' },
+      { baseUrl: AUTH_BASE_URL, tokenAcesso: useAutenticacaoStore.getState().tokenAcesso },
+    );
+    return resposta.dados;
   },
 
   indexarDocumento: async (fonteId: number, arquivo: File): Promise<IndexacaoDocumento> => {
