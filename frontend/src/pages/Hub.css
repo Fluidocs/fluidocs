@@ -64,6 +64,8 @@
 .hub-module { display: flex; flex-direction: column; min-width: 0; padding: 36px; border-radius: 12px 0 0 12px; transition: background-color 180ms ease-out; }
 .hub-module + .hub-module { border-left: 1px solid var(--hub-line); border-radius: 0 12px 12px 0; }
 .hub-module:hover { background: var(--hub-tint); }
+.hub-module-demo { position: relative; }
+.hub-module-demo .hub-module-action { margin-right: 48px; }
 .hub-module-heading > svg { color: var(--hub-accent); margin-bottom: 24px; }
 .hub-module h2 { font-size: 25px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.25; margin: 0; }
 .hub-module-description { color: var(--hub-muted); font-size: 15px; line-height: 1.75; margin: 16px 0 24px; }

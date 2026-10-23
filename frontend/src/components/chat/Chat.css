@@ -19,16 +19,6 @@
   --g-danger: #ffa5a8;
   --g-danger-bg: #44262d;
 }
-.chat-route.prisma-norte {
-  --chat-line: #dde6e4;
-  --chat-hover: #e9f0ee;
-  --chat-accent: #0f766e;
-  --chat-tint: #e3f3f0;
-}
-.dark .chat-route.prisma-norte {
-  --chat-accent: #5eead4;
-  --chat-tint: #173b3a;
-}
 .chat-app { display: grid; grid-template-columns: minmax(0, 1fr); height: 100dvh; min-height: 420px; font-size: 14px; background: var(--chat-bg); }
 .chat-app.chat-com-sidebar { grid-template-columns: 272px minmax(0, 1fr); }
 .chat-route .chat-app :is(button, a, summary, input, textarea):focus-visible { outline: 2px solid var(--chat-accent); outline-offset: 3px; }

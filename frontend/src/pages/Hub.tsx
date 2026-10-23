@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ArrowRight, Database, KeyRound, LogOut, MessageSquare, Search, SlidersHorizontal } from 'lucide-react';
 import { AlternarTema } from '../components/AlternarTema';
+import { FaixaDemo } from '../components/consumo/FaixaDemo';
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import logo from '../assets/fluidocs-logo.png';
 import './Hub.css';
@@ -40,7 +41,7 @@ export function Hub() {
         </div>
 
         <nav className="hub-modules" aria-label="Seleção de módulos">
-          <Link className="hub-module" to="/busca" aria-labelledby="hub-consumo-title" aria-describedby="hub-consumo-description">
+          <Link className="hub-module hub-module-demo" to="/busca" aria-labelledby="hub-consumo-title" aria-describedby="hub-consumo-description hub-consumo-demo">
             <div className="hub-module-heading">
               <Search size={30} strokeWidth={1.6} aria-hidden="true" />
               <h2 id="hub-consumo-title">Busca e conversas</h2>
@@ -51,6 +52,8 @@ export function Hub() {
               <li><MessageSquare size={18} aria-hidden="true" />Conversas com o assistente</li>
             </ul>
             <span className="hub-module-action">Acessar busca e conversas<ArrowRight size={20} aria-hidden="true" /></span>
+            <span id="hub-consumo-demo" className="sr-only">Módulo de demonstração</span>
+            <FaixaDemo noCard />
           </Link>
 
           <Link className="hub-module" to="/fontes-de-dados" aria-labelledby="hub-gerenciamento-title" aria-describedby="hub-gerenciamento-description">

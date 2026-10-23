@@ -1,0 +1,36 @@
+.faixa-demo {
+  position: fixed;
+  z-index: 10;
+  right: 0;
+  bottom: 0;
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.faixa-demo-texto {
+  position: absolute;
+  right: -34px;
+  bottom: 24px;
+  width: 160px;
+  padding: 7px 0;
+  transform: rotate(-45deg);
+  background: #edb44a;
+  color: #292621;
+  font-family: Gestao Manrope, Hub Manrope, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: .08em;
+  text-align: center;
+  box-shadow: 0 2px 6px #2926211a;
+}
+
+.faixa-demo-card { position: absolute; }
+
+@media (max-width: 760px) {
+  .faixa-demo { width: 88px; height: 88px; }
+  .faixa-demo-texto { right: -44px; bottom: 17px; padding-block: 4px; font-size: 11px; }
+}

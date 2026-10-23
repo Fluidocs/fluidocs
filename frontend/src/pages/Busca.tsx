@@ -19,7 +19,7 @@ import { useBuscaStore } from '../store/useBuscaStore';
 import { validarFontes, validarPergunta } from '../services/consumoDemo';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
-import logo from '../assets/prisma-norte-logo.svg';
+import logo from '../assets/acme-logo.svg';
 import '../components/chat/Chat.css';
 
 function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
@@ -40,9 +40,9 @@ function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
 
   const conteudo = <>
     <div className="chat-sidebar-topo">
-      <Link to="/hub" className="chat-brand" aria-label="Prisma Norte — escolher módulo">
+      <Link to="/hub" className="chat-brand" aria-label="Acme — escolher módulo">
         <img src={logo} alt="" />
-        <span>Prisma Norte</span>
+        <span>Acme</span>
       </Link>
       <button className="chat-icon" aria-label="Recolher navegação" onClick={aoFechar}><PanelLeftClose size={19} /></button>
     </div>
@@ -143,7 +143,7 @@ export function Busca() {
       <header className="chat-header busca-header">
         <div className="chat-header-inicio">
           <button ref={navegacaoBotao} className="chat-icon" aria-label={navegacaoAberta ? 'Recolher navegação' : 'Abrir navegação'} aria-expanded={navegacaoAberta} aria-controls="busca-sidebar" onClick={() => setNavegacaoAberta(!navegacaoAberta)}><PanelLeftOpen size={20} /></button>
-          <span className="chat-header-nome">Prisma Norte<span>Busca</span></span>
+          <span className="chat-header-nome">Acme<span>Busca</span></span>
         </div>
         {pesquisa && <span className="busca-header-meta" role="status">{pesquisa.total} documento{pesquisa.total === 1 ? '' : 's'} encontrado{pesquisa.total === 1 ? '' : 's'}</span>}
       </header>

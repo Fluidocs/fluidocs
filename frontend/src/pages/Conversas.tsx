@@ -115,7 +115,7 @@ export function Conversas() {
         <div className="chat-header-inicio">
           <button ref={historicoBotao} className="chat-icon" aria-label={historicoAberto ? 'Recolher histórico' : 'Abrir histórico'} aria-expanded={historicoAberto} aria-controls="chat-sidebar" onClick={() => setHistoricoAberto(!historicoAberto)}><PanelLeftOpen size={20} /></button>
           {!historicoAberto && <button className="chat-icon" aria-label="Nova conversa" title="Nova conversa" onClick={nova}><SquarePen size={20} /></button>}
-          <span className="chat-header-nome">Prisma Norte<span>Conversas</span></span>
+          <span className="chat-header-nome">Acme<span>Conversas</span></span>
         </div>
         {ativa && <>
           <span className="chat-header-titulo" title={ativa.titulo}>{ativa.titulo}</span>

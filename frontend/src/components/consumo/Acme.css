@@ -1,0 +1,60 @@
+.gestao.acme {
+  --g-bg: #fffdf9;
+  --g-paper: #fffdf9;
+  --g-ink: #282824;
+  --g-muted: #6c685f;
+  --g-line: #dfdcd4;
+  --g-accent: #96600a;
+  --g-tint: #fff0cf;
+}
+
+.dark .gestao.acme {
+  --g-bg: #1b1c1b;
+  --g-paper: #222321;
+  --g-ink: #f5f2e9;
+  --g-muted: #b6b1a5;
+  --g-line: #44443c;
+  --g-accent: #f1bc5a;
+  --g-tint: #39301f;
+}
+
+.gestao.chat-route.acme {
+  --chat-bg: #fffdf9;
+  --chat-sidebar: #f5f3ee;
+  --chat-ink: #282824;
+  --chat-muted: #6c685f;
+  --chat-line: #dfdcd4;
+  --chat-hover: #ebe7de;
+  --chat-accent: #96600a;
+  --chat-tint: #fff0cf;
+  --chat-bubble: #f4f0e8;
+  --chat-send: #edb44a;
+  --chat-on-send: #292621;
+}
+
+.dark .gestao.chat-route.acme {
+  --chat-bg: #1b1c1b;
+  --chat-sidebar: #222321;
+  --chat-ink: #f5f2e9;
+  --chat-muted: #b6b1a5;
+  --chat-line: #44443c;
+  --chat-hover: #30312d;
+  --chat-accent: #f1bc5a;
+  --chat-tint: #39301f;
+  --chat-bubble: #2a2b27;
+  --chat-send: #f1bc5a;
+  --chat-on-send: #24221c;
+}
+
+.acme .consumo-acesso-marca { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; font-size: 26px; font-weight: 700; letter-spacing: -.03em; }
+.acme .consumo-acesso-marca img { width: 36px; height: 36px; }
+.acme .chat-brand img { width: 30px; height: 30px; }
+
+/* Reserve o canto da faixa no conteúdo, mantendo a sidebar até a base da tela. */
+.acme.consumo-autenticado .chat-main { padding-bottom: 48px; }
+.acme.consumo-acesso { padding-bottom: 80px; }
+
+@media (max-width: 760px) {
+  .acme.consumo-autenticado .chat-main { padding-bottom: max(40px, env(safe-area-inset-bottom)); }
+  .acme .chat-area-compositor { padding-bottom: 20px; }
+}

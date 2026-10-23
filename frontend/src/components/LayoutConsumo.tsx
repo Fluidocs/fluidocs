@@ -7,8 +7,10 @@ import { useFontesConsumoStore } from '../store/useFontesDadosStore';
 import { useConsumoStore } from '../store/useConsumoStore';
 import { useChaveConsumoStore } from '../store/useChaveConsumoStore';
 import { AcessoConsumo } from './consumo/AcessoConsumo';
+import { FaixaDemo } from './consumo/FaixaDemo';
 import './gerenciamento/Gerenciamento.css';
 import './consumo/Consumo.css';
+import './consumo/Acme.css';
 
 export function LayoutConsumo() {
   const { usuario, tokenAcesso, estaAutenticado } = useAutenticacaoStore();
@@ -25,14 +27,15 @@ export function LayoutConsumo() {
   }, [estaAutenticado, tokenAcesso, chave, pathname, carregarConversas]);
   useEffect(() => {
     const anterior = document.title;
-    document.title = `${pathname === '/busca' ? 'Busca de documentos' : 'Conversas'} · Prisma Norte`;
+    document.title = `${pathname === '/busca' ? 'Busca de documentos' : 'Conversas'} · Acme`;
     window.scrollTo(0, 0);
     return () => { document.title = anterior; };
   }, [pathname]);
   if (!estaAutenticado || !usuario) return <Navigate to="/entrar" replace />;
   if (!chave) return <AcessoConsumo key={`${identificarConta(usuario)}:${tokenAcesso}`} />;
-  return <div className="gestao chat-route prisma-norte consumo-autenticado">
+  return <div className="gestao chat-route acme consumo-autenticado">
     <div className="consumo-chave-barra"><span><KeyRound size={15} aria-hidden="true" />Chave de API em uso nesta aba</span><button disabled={ocupado} onClick={() => limpar()}>Trocar chave</button></div>
     <Outlet key={identificarConta(usuario)} />
+    <FaixaDemo />
   </div>;
 }

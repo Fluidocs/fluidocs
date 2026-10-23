@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, KeyRound } from 'lucide-react';
 import { useChaveConsumoStore } from '../../store/useChaveConsumoStore';
 import { AlternarTema } from '../AlternarTema';
+import { FaixaDemo } from './FaixaDemo';
+import logo from '../../assets/acme-logo.svg';
 
 export function AcessoConsumo() {
   const { usar, erro: erroChave } = useChaveConsumoStore();
@@ -13,9 +15,10 @@ export function AcessoConsumo() {
     try { usar(valor); setValor(''); }
     catch (e) { setErro(e instanceof Error ? e.message : 'Confira sua chave e tente novamente.'); }
   }
-  return <div className="gestao consumo-acesso prisma-norte">
+  return <div className="gestao consumo-acesso acme">
     <header className="consumo-acesso-topo"><Link to="/hub" className="consumo-link"><ArrowLeft size={17} />Trocar módulo</Link><AlternarTema /></header>
     <main className="consumo-acesso-conteudo">
+      <div className="consumo-acesso-marca"><img src={logo} alt="" /><span>Acme</span></div>
       <KeyRound size={28} strokeWidth={1.5} aria-hidden="true" />
       <h1>Conecte sua chave de API</h1>
       <p>Use uma chave da sua conta para pesquisar documentos e conversar com suas fontes.</p>
@@ -29,5 +32,6 @@ export function AcessoConsumo() {
       </form>
       <p>Ainda não tem uma chave? <Link to="/chaves-api" className="consumo-link">Criar no gerenciamento</Link></p>
     </main>
+    <FaixaDemo />
   </div>;
 }
