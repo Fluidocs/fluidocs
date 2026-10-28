@@ -77,19 +77,23 @@ function GerenciarFontes({ tokenAcesso }: { tokenAcesso: string }) {
             <ul className="gestao-source-grid">{visiveis.map(fonte => (
               <li key={fonte.id} className="gestao-source-card">
                 <div className="gestao-source-content">
-                  <div className="gestao-source-heading">
-                    <Database size={21} aria-hidden="true" />
-                    <h3>{fonte.nome}</h3>
+                  <div className="gestao-source-header">
+                    <div className="gestao-source-heading">
+                      <Database size={21} aria-hidden="true" />
+                      <h3>{fonte.nome}</h3>
+                    </div>
+                    <div className="gestao-source-management">
+                      <button className="gestao-icon-button" disabled={bloqueado} aria-label={`Editar fonte ${fonte.nome}`} onClick={e => abrirEditor(fonte, e.currentTarget)}><Pencil size={17} aria-hidden="true" /></button>
+                      <button className="gestao-icon-button gestao-delete" disabled={bloqueado} aria-label={`Excluir fonte ${fonte.nome}`} onClick={() => { setMensagem(''); setExclusao(fonte); }}><Trash2 size={17} aria-hidden="true" /></button>
+                    </div>
                   </div>
                   <p className={`gestao-source-description${!fonte.descricao ? ' gestao-no-description' : ''}`}>{fonte.descricao || 'Sem descrição'}</p>
                 </div>
                 <span className="gestao-source-meta">Fonte criada em <time dateTime={fonte.criadoEm}>{data.format(new Date(fonte.criadoEm))}</time></span>
-                <button type="button" className="gestao-button gestao-documents-trigger" disabled={bloqueado} aria-label={`Ver arquivos indexados na fonte ${fonte.nome}`} onClick={e => { origemDocumentos.current = e.currentTarget; setDocumentos(fonte); }}><FileText size={16} aria-hidden="true" />Ver arquivos indexados</button>
                 <div className="gestao-source-footer">
-                  <button className="gestao-button gestao-index-button" disabled={bloqueado} aria-label={`Indexar documentos na fonte ${fonte.nome}`} onClick={e => { origemIndexacao.current = e.currentTarget; setIndexacao(fonte); }}><UploadCloud size={16} aria-hidden="true" />Indexar documentos</button>
-                  <div className="gestao-source-management">
-                    <button className="gestao-icon-button" disabled={bloqueado} aria-label={`Editar fonte ${fonte.nome}`} onClick={e => abrirEditor(fonte, e.currentTarget)}><Pencil size={17} aria-hidden="true" /></button>
-                    <button className="gestao-icon-button gestao-delete" disabled={bloqueado} aria-label={`Excluir fonte ${fonte.nome}`} onClick={() => { setMensagem(''); setExclusao(fonte); }}><Trash2 size={17} aria-hidden="true" /></button>
+                  <div className="gestao-source-file-actions">
+                    <button className="gestao-button gestao-index-button" title="Indexar documentos" disabled={bloqueado} aria-label={`Indexar documentos na fonte ${fonte.nome}`} onClick={e => { origemIndexacao.current = e.currentTarget; setIndexacao(fonte); }}><UploadCloud size={16} aria-hidden="true" /><span>Indexar documentos</span></button>
+                    <button type="button" className="gestao-button gestao-documents-trigger" title="Ver arquivos indexados" disabled={bloqueado} aria-label={`Ver arquivos indexados na fonte ${fonte.nome}`} onClick={e => { origemDocumentos.current = e.currentTarget; setDocumentos(fonte); }}><FileText size={16} aria-hidden="true" /><span>Ver arquivos indexados</span></button>
                   </div>
                 </div>
               </li>

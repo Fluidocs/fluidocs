@@ -145,6 +145,10 @@
 .gestao-dialog .gestao-muted { font-size: 13px; }
 .gestao-danger-icon { color: var(--g-danger); }
 .gestao-index-dialog { max-width: 680px; padding: 0; overflow-y: auto; }
+.gestao-index-dialog-complete { max-width: 440px; }
+.gestao-index-confirmation { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 40px 28px; text-align: center; }
+.gestao-index-confirmation svg { flex-shrink: 0; color: var(--g-success); }
+.gestao-index-confirmation p { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.5; text-wrap: balance; }
 .gestao-index-header { display: flex; justify-content: space-between; gap: 24px; padding: 26px 28px 22px; border-bottom: 1px solid var(--g-line); }
 .gestao-index-header h2 { margin: 0 0 5px; }
 .gestao-index-header p { margin: 0; color: var(--g-muted); font-size: 13px; }
@@ -352,16 +356,18 @@
 .gestao-source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 20px; list-style: none; padding: 0; margin: 0; }
 .gestao-source-card { display: flex; flex-direction: column; min-width: 0; padding: 20px; border: 1px solid var(--g-line); border-radius: 14px; background: var(--g-paper); overflow-wrap: anywhere; }
 .gestao-source-content { flex: 1; min-width: 0; }
-.gestao-source-heading { display: flex; align-items: flex-start; gap: 12px; }
+.gestao-source-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.gestao-source-heading { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
 .gestao-source-heading > svg { flex-shrink: 0; margin-top: 2px; color: var(--g-accent); }
 .gestao-source-heading h3 { min-width: 0; font-size: 16px; letter-spacing: -.01em; }
 .gestao-source-description { margin-top: 12px; color: var(--g-muted); font-size: 13px; line-height: 1.75; white-space: pre-wrap; }
 .gestao-source-description.gestao-no-description { font-style: italic; }
-.gestao-source-meta { display: block; margin-top: 20px; color: var(--g-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.gestao-source-card .gestao-documents-trigger { align-self: flex-start; min-height: 44px; margin-top: 12px; }
-.gestao-source-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--g-line); }
-.gestao-source-card .gestao-index-button { flex: 1 1 170px; min-height: 44px; margin: 0; }
-.gestao-source-management { display: flex; gap: 4px; margin-left: auto; }
+.gestao-source-meta { display: block; align-self: flex-end; margin-top: 20px; text-align: right; color: var(--g-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.gestao-source-footer { margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--g-line); }
+.gestao-source-file-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+.gestao-source-file-actions .gestao-button { min-width: 0; min-height: 44px; margin: 0; padding-inline: 10px; white-space: normal; }
+.gestao-source-file-actions svg { flex-shrink: 0; }
+.gestao-source-management { display: flex; flex-shrink: 0; gap: 4px; margin: -10px -10px 0 auto; }
 .gestao-source-management .gestao-icon-button { width: 44px; height: 44px; }
 
 @media (max-width: 1180px) {

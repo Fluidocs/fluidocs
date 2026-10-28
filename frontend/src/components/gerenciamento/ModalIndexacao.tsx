@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type DragEvent } from 'react';
-import { Archive, Check, FileText, UploadCloud, X } from 'lucide-react';
+import { Archive, Check, CircleCheck, FileText, UploadCloud, X } from 'lucide-react';
 import type { FonteDados } from '../../store/useGerenciamentoStore';
 import type { IndexarArquivos, ResultadoEnvioIndexacao } from '../../store/useFontesDadosStore';
 import { arquivoEhZip, extrairMensagemErro, FORMATOS_INDEXACAO, validarArquivoIndexacao } from '../../services/api';
@@ -38,6 +38,7 @@ export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Prop
   const aceitos = arquivos.filter(item => item.resultado?.status === 'aceito').length;
   const falhas = arquivos.filter(item => item.resultado?.status === 'erro').length;
   const pendentes = arquivos.map((item, indice) => ({ ...item, indice })).filter(item => item.resultado?.status !== 'aceito');
+  const envioConcluido = arquivos.length > 0 && aceitos === arquivos.length && !processando && !erro;
 
   useEffect(() => {
     const elemento = dialogo.current;
@@ -45,6 +46,12 @@ export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Prop
     elemento?.showModal();
     return () => { ativo.current = false; elemento?.close(); };
   }, []);
+
+  useEffect(() => {
+    if (!envioConcluido) return;
+    const temporizador = window.setTimeout(aoFechar, 3000);
+    return () => window.clearTimeout(temporizador);
+  }, [envioConcluido, aoFechar]);
 
   function limpar() {
     setArquivos([]);
@@ -90,7 +97,11 @@ export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Prop
   }
 
   return (
-    <dialog ref={dialogo} className="gestao-dialog gestao-index-dialog" aria-labelledby={tituloId} aria-describedby={descricaoId} onCancel={evento => { evento.preventDefault(); if (!enviando.current) aoFechar(); }}>
+    <dialog ref={dialogo} className={`gestao-dialog gestao-index-dialog${envioConcluido ? ' gestao-index-dialog-complete' : ''}`} aria-labelledby={tituloId} aria-describedby={envioConcluido ? undefined : descricaoId} onCancel={evento => { evento.preventDefault(); if (!enviando.current) aoFechar(); }}>
+      {envioConcluido ? <div className="gestao-index-confirmation" role="status" aria-live="polite">
+        <CircleCheck size={48} strokeWidth={1.6} aria-hidden="true" />
+        <p id={tituloId}>{arquivos.length === 1 ? 'arquivo enviado para a fila de processamento!' : 'arquivos enviados para a fila de processamento!'}</p>
+      </div> : <>
       <div className="gestao-index-header">
         <div><h2 id={tituloId}>Indexar documentos</h2><p id={descricaoId}>{fonte ? <>Adicione conteúdo à fonte <strong>{fonte.nome}</strong>.</> : 'Escolha a fonte de dados que receberá os documentos.'}</p></div>
         <button className="gestao-icon-button" aria-label="Fechar indexação" disabled={processando} onClick={aoFechar}><X size={20} /></button>
@@ -125,6 +136,7 @@ export function ModalIndexacao({ fonte, fontes = [], aoFechar, aoIndexar }: Prop
       {erro && <p className="gestao-error" role="alert">{erro}</p>}
 
       <div className="gestao-form-actions"><button type="button" className="gestao-button" disabled={processando} onClick={aoFechar}>{aceitos ? 'Fechar' : 'Cancelar'}</button><button type="button" className="gestao-button gestao-button-primary" disabled={!fonteSelecionada || !pendentes.length || processando} onClick={() => void indexar()}>{processando ? 'Enviando…' : `${falhas ? 'Reenviar' : 'Indexar'}${pendentes.length ? ` ${pendentes.length}` : ''}`}</button></div>
+      </>}
     </dialog>
   );
 }
