@@ -105,6 +105,7 @@ export interface RespostaPesquisa {
 
 export interface AnexoConversaBackend {
   id: number; mensagem_id: number; nome: string; extensao: string;
+  trecho?: string | null;
 }
 export interface MensagemConversaBackend {
   id: number; conversa_id: number; conteudo: string; papel: 'U' | 'A';

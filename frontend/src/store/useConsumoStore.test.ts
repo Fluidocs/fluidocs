@@ -14,7 +14,7 @@ const conversa: ConversaDetalheBackend = {
   mensagens: [
     { id: 1, conversa_id: 7, conteudo: 'Qual é o prazo?', papel: 'U', data_envio: '2026-10-14T10:00:00Z', anexos: [] },
     { id: 2, conversa_id: 7, conteudo: 'O prazo é de 30 dias.', papel: 'A', data_envio: '2026-10-14T10:00:00Z',
-      anexos: [{ id: 1, mensagem_id: 2, nome: 'manual.pdf', extensao: 'pdf' }] },
+      anexos: [{ id: 1, mensagem_id: 2, nome: 'manual.pdf', extensao: 'pdf', trecho: 'O prazo é de 30 dias.' }] },
   ],
 };
 function pendente<T>() {
@@ -47,7 +47,7 @@ describe('conversas persistidas na API', () => {
     expect(store.getState().enviando).toBe(true); expect(store.getState().conversas).toEqual([]);
     espera.resolver(conversa); expect(await envio).toBe('7');
     expect(cliente.perguntarConversa).toHaveBeenCalledWith('manual', [12, 13]);
-    expect(store.getState().conversas[0].mensagens[1].evidencias[0]).toMatchObject({ nome: 'manual.pdf', fonteNome: 'Origem não informada pela API', trecho: null });
+    expect(store.getState().conversas[0].mensagens[1].evidencias[0]).toMatchObject({ nome: 'manual.pdf', fonteNome: 'Origem não informada pela API', trecho: 'O prazo é de 30 dias.' });
     expect(store.getState().enviando).toBe(false);
   });
   it('permite ler conversas da API sem fontes conhecidas e bloqueia continuar com outro escopo', async () => {
@@ -145,15 +145,23 @@ describe('conversas persistidas na API', () => {
     expect(cliente.listarConversas).toHaveBeenLastCalledWith(2);
     expect(store.getState().conversas.map(c => c.id)).toEqual(['7', '8']);
   });
-  it('não inventa fonte ou trecho de anexos antigos', () => {
-    const antiga = { ...conversa, mensagens: [conversa.mensagens[1]] };
-    expect(normalizarConversaConsumo(antiga, conta).mensagens[0].evidencias[0]).toMatchObject({ fonteNome: 'Origem não informada pela API', trecho: null });
+  it('omite anexos antigos e documentos com trechos nulos, vazios ou só com espaços', () => {
+    const mensagem = conversa.mensagens[1];
+    const anexo = mensagem.anexos[0];
+    const antiga = { ...conversa, mensagens: [{ ...mensagem, anexos: [
+      { ...anexo, trecho: undefined }, { ...anexo, id: 2, trecho: null },
+      { ...anexo, id: 3, trecho: '' }, { ...anexo, id: 4, trecho: ' \n\t ' },
+    ] }] };
+    expect(normalizarConversaConsumo(antiga, conta).mensagens[0].evidencias).toEqual([]);
   });
-  it('agrupa os nomes repetidos dos anexos sem inventar trechos', () => {
+  it('agrupa os nomes repetidos sem perder os trechos nem incluir documentos sem evidência', () => {
     const anexo = conversa.mensagens[1].anexos[0];
-    const dados = { ...conversa, mensagens: [{ ...conversa.mensagens[1], anexos: [anexo, { ...anexo, id: 2 }] }] };
+    const dados = { ...conversa, mensagens: [{ ...conversa.mensagens[1], anexos: [
+      { ...anexo, nome: 'sem-evidencia.pdf', trecho: null },
+      anexo, { ...anexo, id: 2, trecho: 'Outro trecho do manual.' },
+    ] }] };
     expect(normalizarConversaConsumo(dados, conta).mensagens[0].evidencias).toEqual([
-      { id: '1', nome: 'manual.pdf', fonteNome: 'Origem não informada pela API', trecho: null },
+      { id: '1', nome: 'manual.pdf', fonteNome: 'Origem não informada pela API', trecho: 'O prazo é de 30 dias.\n\nOutro trecho do manual.' },
     ]);
   });
   it('descarta um detalhe atrasado ao selecionar outra conversa já carregada', async () => {

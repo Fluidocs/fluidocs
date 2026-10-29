@@ -5,6 +5,7 @@ class Anexo(models.Model):
     id = fields.IntField(pk=True)
     nome = fields.CharField(max_length=255)
     extensao = fields.CharField(max_length=4)
+    trecho = fields.TextField(null=True)
     mensagem = fields.ForeignKeyField(
         'models.Mensagem', related_name='anexos', on_delete=fields.CASCADE,
     )

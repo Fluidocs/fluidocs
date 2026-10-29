@@ -40,6 +40,7 @@ class AnexoResponse(BaseModel):
     mensagem_id: int
     nome: str = Field(min_length=1, max_length=255)
     extensao: str = Field(min_length=1, max_length=4)
+    trecho: str | None = None
 
     @field_validator('nome', 'extensao')
     @classmethod

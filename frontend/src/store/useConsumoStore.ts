@@ -32,8 +32,12 @@ type Sessao = Pick<ReturnType<typeof useAutenticacaoStore.getState>, 'usuario' |
 function agruparEvidencias(anexos: AnexoConversaBackend[]): EvidenciaConversa[] {
   const arquivos = new Map<string, EvidenciaConversa>();
   for (const anexo of anexos) {
+    const trecho = anexo.trecho?.trim();
+    if (!trecho) continue;
     const chave = anexo.nome;
-    if (!arquivos.has(chave)) arquivos.set(chave, { id: String(anexo.id), nome: anexo.nome, trecho: null,
+    const arquivo = arquivos.get(chave);
+    if (arquivo) arquivo.trecho += `\n\n${trecho}`;
+    else arquivos.set(chave, { id: String(anexo.id), nome: anexo.nome, trecho,
       fonteNome: 'Origem não informada pela API' });
   }
   return [...arquivos.values()];

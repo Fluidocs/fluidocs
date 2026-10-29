@@ -145,11 +145,14 @@ class ServicoConversa:
             )
             anexos = []
             for trecho in resposta.trechos_anexos:
+                if not trecho.conteudo.strip():
+                    continue
                 nome = trecho.nome_documento or 'Documento.txt'
                 extensao = PurePosixPath(nome).suffix.lstrip('.').lower()
                 anexo = await Anexo.create(
                     mensagem_id=mensagem_assistente.id, nome=nome[:255],
                     extensao=extensao[:4] or 'txt',
+                    trecho=trecho.conteudo,
                     using_db=conexao,
                 )
                 anexos.append(AnexoResponse.model_validate(anexo))

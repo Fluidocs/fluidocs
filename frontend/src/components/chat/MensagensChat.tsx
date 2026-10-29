@@ -11,6 +11,7 @@ export function MensagensChat({ mensagens, conversaId }: { mensagens: MensagemCo
 }
 
 function MensagemChat({ mensagem: m }: { mensagem: MensagemConsumo }) {
+  const evidencias = m.evidencias.filter(d => d.trecho?.trim());
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -22,7 +23,7 @@ function MensagemChat({ mensagem: m }: { mensagem: MensagemConsumo }) {
   return <article className={`chat-mensagem chat-mensagem-${m.papel}`} aria-label={m.papel === 'usuario' ? 'Sua mensagem' : 'Resposta da Acme'}>
     {m.papel === 'assistente' && <div className="chat-assistente-identidade"><img src={logo} alt="" /><span>Acme</span></div>}
     <div className="chat-mensagem-texto">{m.conteudo.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}</div>
-    {m.evidencias.length > 0 && <details className="chat-evidencias"><summary><FileText size={15} /><span>{m.evidencias.length} arquivo{m.evidencias.length > 1 ? 's' : ''} usado{m.evidencias.length > 1 ? 's' : ''}</span><ChevronDown size={14} /></summary><div className="chat-evidencias-lista">{m.evidencias.map((d, i) => <details key={d.id} className="chat-evidencia"><summary><span className="chat-citacao">{i + 1}</span><span>{d.nome}<small>{d.fonteNome}</small></span><ChevronDown size={15} /></summary>{d.trecho ? <blockquote>{d.trecho}</blockquote> : <p>O trecho deste arquivo não foi registrado nesta resposta.</p>}</details>)}</div></details>}
+    {evidencias.length > 0 && <details className="chat-evidencias"><summary><FileText size={15} /><span>{evidencias.length} arquivo{evidencias.length > 1 ? 's' : ''} usado{evidencias.length > 1 ? 's' : ''}</span><ChevronDown size={14} /></summary><div className="chat-evidencias-lista">{evidencias.map((d, i) => <details key={d.id} className="chat-evidencia"><summary><span className="chat-citacao">{i + 1}</span><span>{d.nome}<small>{d.fonteNome}</small></span><ChevronDown size={15} /></summary><blockquote>{d.trecho}</blockquote></details>)}</div></details>}
     {m.papel === 'assistente' && <div className="chat-mensagem-acoes"><button className="chat-icon" aria-label={copiado ? 'Resposta copiada' : 'Copiar resposta'} title={copiado ? 'Copiado' : 'Copiar resposta'} onClick={copiar}>{copiado ? <Check size={16} /> : <Copy size={16} />}</button><span role="status">{copiado ? 'Copiado' : erro}</span></div>}
   </article>;
 }
