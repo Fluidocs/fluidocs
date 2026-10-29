@@ -1,0 +1,24 @@
+.busca-pesquisando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  color: var(--chat-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.busca-pesquisando > svg {
+  flex-shrink: 0;
+  color: var(--chat-accent);
+  animation: busca-girar 1s linear infinite;
+}
+
+@keyframes busca-girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busca-pesquisando > svg { animation: none; }
+}

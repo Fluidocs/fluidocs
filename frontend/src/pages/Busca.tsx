@@ -6,6 +6,7 @@ import {
   FileSearch,
   FileText,
   LayoutGrid,
+  LoaderCircle,
   LogOut,
   MessageSquare,
   PanelLeftClose,
@@ -22,6 +23,7 @@ import { AlternarTema } from '../components/AlternarTema';
 import { TrechosResultadoBusca } from '../components/consumo/TrechosResultadoBusca';
 import logo from '../assets/acme-logo.svg';
 import '../components/chat/Chat.css';
+import './Busca.css';
 
 function BarraLateralBusca({ aberto, mobile, usuario, aoFechar, aoSair }: {
   aberto: boolean;
@@ -90,6 +92,7 @@ export function Busca() {
   const minhas = fontes.filter(f => f.conta === conta);
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const [termo, setTermo] = useState('');
+  const [pesquisaIniciada, setPesquisaIniciada] = useState(false);
   const { pesquisa, pesquisando, erro: erroPesquisa, pesquisar: buscarDocumentos, limpar } = useBuscaStore(s => s);
   const [erro, setErro] = useState('');
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
@@ -123,6 +126,7 @@ export function Busca() {
     try {
       const consulta = validarPergunta(termo);
       const escopo = validarFontes(conta, fontes, selecionadas);
+      setPesquisaIniciada(true);
       void buscarDocumentos(consulta, escopo);
       setErro('');
     } catch (e) {
@@ -152,8 +156,8 @@ export function Busca() {
       {erroFontes && <div className="chat-alerta" role="alert">{erroFontes}<button onClick={carregar}>Recarregar fontes</button></div>}
       {carregando && <p className="chat-alerta" role="status">Carregando suas fontes…</p>}
 
-      <div className={`busca-corpo${pesquisa ? ' busca-com-resultados' : ' busca-inicial'}`}>
-        {!pesquisa && <div className="busca-boas-vindas">
+      <div className={`busca-corpo${pesquisaIniciada ? ' busca-com-resultados' : ' busca-inicial'}`}>
+        {!pesquisaIniciada && <div className="busca-boas-vindas">
           <h1>Encontre o trecho certo<br />nos seus documentos.</h1>
           <p>Escolha as fontes, descreva o que procura e confira a origem de cada resultado.</p>
         </div>}
@@ -169,8 +173,8 @@ export function Busca() {
             </div>
           </form>
           {(erro || erroPesquisa) && <p role="alert" className="chat-alerta">{erro || erroPesquisa}</p>}
-          {pesquisando && <p role="status" className="chat-alerta">Pesquisando seus documentos…</p>}
-          {!pesquisa && !pesquisando && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
+          {pesquisando && <p role="status" className="busca-pesquisando"><LoaderCircle size={18} aria-hidden="true" /><span>pesquisando</span></p>}
+          {!pesquisaIniciada && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
             {['Benefícios para novos talentos', 'Padrões de revisão de código', 'Como publicar uma nova versão'].map(exemplo => <button key={exemplo} onClick={() => definirExemplo(exemplo)}>{exemplo}</button>)}
           </div>}
           <p className="chat-rodape">A busca consulta os documentos indexados nas fontes selecionadas.</p>
@@ -182,7 +186,7 @@ export function Busca() {
               <h1 id="resultados-titulo">Resultados para “{pesquisa.termo}”</h1>
               <p>Trechos mais relacionados dentro das fontes que você selecionou.</p>
             </div>
-            <button className="busca-nova-consulta" onClick={() => { setTermo(''); limpar(); setErro(''); requestAnimationFrame(() => campo.current?.focus()); }}><Search size={16} />Nova consulta</button>
+            <button className="busca-nova-consulta" onClick={() => { setTermo(''); limpar(); setPesquisaIniciada(false); setErro(''); requestAnimationFrame(() => campo.current?.focus()); }}><Search size={16} />Nova consulta</button>
           </div>
 
           {pesquisa.resultados.length ? <div className="busca-lista">
