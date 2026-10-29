@@ -230,7 +230,9 @@
 .busca-app .busca-resultado h2 { font-size: 15px; line-height: 1.45; letter-spacing: -.015em; overflow-wrap: anywhere; }
 .busca-resultado-identidade p { margin-top: 3px; color: var(--chat-muted); font-size: 11px; line-height: 1.5; }
 .busca-resultado-tipo { align-self: start; padding: 5px 7px; border-radius: 6px; background: var(--chat-sidebar); color: var(--chat-muted); font-size: 10px; font-weight: 700; letter-spacing: .04em; }
-.busca-resultado-trecho { max-width: 72ch; margin: 18px 0; padding: 0; border: 0; color: var(--chat-ink); font-size: 13px; line-height: 1.85; }
+.busca-resultado-trecho { max-width: 72ch; margin: 18px 0; padding: 0; border: 0; color: var(--chat-ink); font-size: 13px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.busca-resultado-expandir { display: block; min-height: 36px; margin: -10px 0 10px; padding: 6px 0; color: var(--chat-accent); font-size: 13px; text-underline-offset: 4px; }
+.busca-resultado-expandir:hover { text-decoration: underline; }
 .busca-resultado-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 18px; padding-top: 14px; border-top: 1px solid var(--chat-line); color: var(--chat-muted); font-size: 10px; line-height: 1.5; }
 .busca-resultado-meta span { display: inline-flex; align-items: center; gap: 6px; }
 .busca-resultado-meta svg { color: var(--chat-accent); }

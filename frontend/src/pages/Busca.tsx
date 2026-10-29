@@ -19,6 +19,7 @@ import { useBuscaStore } from '../store/useBuscaStore';
 import { validarFontes, validarPergunta } from '../services/consumoDemo';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
+import { TrechosResultadoBusca } from '../components/consumo/TrechosResultadoBusca';
 import logo from '../assets/acme-logo.svg';
 import '../components/chat/Chat.css';
 
@@ -193,9 +194,7 @@ export function Busca() {
                 </div>
                 <span className="busca-resultado-tipo">{documento.nome_documento.includes('.') ? documento.nome_documento.split('.').pop()?.toUpperCase() : 'ARQUIVO'}</span>
               </div>
-              {documento.trechos.some(t => t.conteudo?.trim())
-                ? documento.trechos.filter(t => t.conteudo?.trim()).map((trecho, indice) => <blockquote className="busca-resultado-trecho" key={`${trecho.id_trecho}:${indice}`}>{trecho.conteudo}</blockquote>)
-                : <p className="busca-resultado-trecho">Nenhum trecho disponível para este documento.</p>}
+              <TrechosResultadoBusca trechos={documento.trechos} />
               <footer className="busca-resultado-meta">
                 <span><Database size={14} aria-hidden="true" />{pesquisa.fontes.find(f => Number(f.id) === documento.fonte_dados_id)?.nome ?? 'Fonte indisponível'}</span>
               </footer>
