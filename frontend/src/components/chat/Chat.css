@@ -53,11 +53,18 @@
 .chat-app .chat-historico h2 { color: var(--chat-muted); font-size: 11px; font-weight: 400; padding: 0 12px 8px; letter-spacing: 0; }
 .chat-historico ul { list-style: none; padding: 0; margin: 0; }
 .chat-historico li + li { margin-top: 2px; }
-.chat-historico li button { display: flex; gap: 10px; align-items: center; width: 100%; min-height: 42px; padding: 10px 12px; border-radius: 8px; text-align: left; font-size: 12px; }
-.chat-historico li button svg { flex-shrink: 0; color: var(--chat-muted); }
-.chat-historico li button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat-historico li button:hover, .chat-historico li button.selecionada { background: var(--chat-hover); }
-.chat-historico li button.selecionada { font-weight: 700; }
+.chat-historico-item { display: flex; align-items: center; border-radius: 8px; }
+.chat-historico-item:hover, .chat-historico-item.selecionada { background: var(--chat-hover); }
+.chat-historico-selecionar { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 0; min-height: 44px; padding: 10px 8px; border-radius: 8px; text-align: left; font-size: 12px; }
+.chat-historico-selecionar svg { flex-shrink: 0; color: var(--chat-muted); }
+.chat-historico-selecionar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-historico-item.selecionada .chat-historico-selecionar { font-weight: 700; }
+.chat-historico-item .chat-icon, .chat-historico-edicao .chat-icon { width: 36px; height: 44px; }
+.chat-historico-item .chat-danger { color: var(--g-danger); }
+.chat-historico-edicao { padding: 2px; }
+.chat-historico-edicao > div { display: flex; align-items: center; gap: 2px; }
+.chat-historico-edicao input { width: 100%; min-width: 0; min-height: 40px; padding: 8px; border: 1px solid var(--chat-line); border-radius: 8px; background: var(--chat-bg); color: var(--chat-ink); font-size: 12px; }
+.chat-historico-edicao p { margin: 4px 6px 8px; color: var(--g-danger); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .chat-historico-vazio { padding: 24px 12px; color: var(--chat-muted); font-size: 12px; line-height: 1.8; }
 .chat-historico-vazio p { margin: 12px 0 4px; color: var(--chat-ink); }
 .chat-historico-vazio span { font-size: 11px; }

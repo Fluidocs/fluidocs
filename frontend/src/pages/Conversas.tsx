@@ -4,7 +4,7 @@ import { Check, MessageSquare, MoreHorizontal, PanelLeftOpen, Pencil, SquarePen,
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { identificarConta } from '../store/useGerenciamentoStore';
 import { useFontesConsumoStore } from '../store/useFontesDadosStore';
-import { useConsumoStore } from '../store/useConsumoStore';
+import { useConsumoStore, type ConversaConsumo } from '../store/useConsumoStore';
 import { extrairMensagemErro } from '../services/api';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
 import { BarraLateralChat } from '../components/chat/BarraLateralChat';
@@ -32,7 +32,7 @@ export function Conversas() {
   const [aviso, setAviso] = useState('');
   const [editando, setEditando] = useState(false);
   const [titulo, setTitulo] = useState('');
-  const [exclusao, setExclusao] = useState(false);
+  const [exclusao, setExclusao] = useState<ConversaConsumo | null>(null);
   const campo = useRef<HTMLTextAreaElement>(null);
   const historicoBotao = useRef<HTMLButtonElement>(null);
   const acoes = useRef<HTMLDetailsElement>(null);
@@ -46,7 +46,7 @@ export function Conversas() {
     !!erroLeitura || (!!id && !!erroDetalhe) || fonteIndisponivel || fontesAntigas || (!!id && !ativa) || (!fontesFixas && !idsValidos.length);
 
   useEffect(() => {
-    setEntrada(''); setErro(''); setEditando(false); setExclusao(false);
+    setEntrada(''); setErro(''); setEditando(false); setExclusao(null);
     if (acoes.current) acoes.current.open = false;
     return () => { contextoVisual.current++; };
   }, [id]);
@@ -62,7 +62,7 @@ export function Conversas() {
   function fecharHistorico() { setHistoricoAberto(false); requestAnimationFrame(() => historicoBotao.current?.focus()); }
   function nova() {
     contextoVisual.current++;
-    setParametros({}); setSelecionadas([]); setEntrada(''); setErro(''); setAviso(''); setEditando(false); setExclusao(false);
+    setParametros({}); setSelecionadas([]); setEntrada(''); setErro(''); setAviso(''); setEditando(false); setExclusao(null);
     if (mobile) setHistoricoAberto(false);
     requestAnimationFrame(() => campo.current?.focus());
   }
@@ -108,7 +108,7 @@ export function Conversas() {
   return <div className={`chat-app${historicoAberto && !mobile ? ' chat-com-sidebar' : ''}`}>
     <a className="chat-skip" href="#chat-conteudo">Pular para a conversa</a>
     <p className="chat-sr-only" role="status">{aviso}</p>
-    <BarraLateralChat aberto={historicoAberto} mobile={mobile} conversas={minhasConversas} ativaId={id} usuario={usuario} aoFechar={fecharHistorico} aoSelecionar={selecionar} aoCriar={nova} aoSair={sair} carregando={carregando} temMais={pagina < paginas} ocupado={enviando || alterando} aoCarregarMais={() => void carregar(true)} />
+    <BarraLateralChat aberto={historicoAberto} mobile={mobile} conversas={minhasConversas} ativaId={id} usuario={usuario} aoFechar={fecharHistorico} aoSelecionar={selecionar} aoCriar={nova} aoSair={sair} carregando={carregando} temMais={pagina < paginas} ocupado={enviando || alterando} aoCarregarMais={() => void carregar(true)} aoRenomear={async (conversaId, novoTitulo) => { const atualizado = await renomear(conta, conversaId, novoTitulo); if (atualizado) setAviso('Título atualizado.'); return atualizado; }} aoExcluir={setExclusao} />
     <main id="chat-conteudo" className="chat-main" tabIndex={-1}>
       {ativa && <h1 className="chat-sr-only">{ativa.titulo}</h1>}
       <header className="chat-header">
@@ -121,7 +121,7 @@ export function Conversas() {
           <span className="chat-header-titulo" title={ativa.titulo}>{ativa.titulo}</span>
           <details className="chat-acoes" ref={acoes} onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
             <summary className="chat-icon" aria-label="Opções da conversa"><MoreHorizontal size={22} /></summary>
-            <div className="chat-acoes-menu"><button disabled={enviando || alterando || carregandoDetalhe} onClick={() => { setTitulo(ativa.titulo); setEditando(true); setErro(''); if (acoes.current) acoes.current.open = false; }}><Pencil size={16} />Renomear conversa</button><button className="chat-danger" disabled={enviando || alterando || carregandoDetalhe} onClick={() => { setExclusao(true); if (acoes.current) acoes.current.open = false; }}><Trash2 size={16} />Excluir conversa</button></div>
+            <div className="chat-acoes-menu"><button disabled={enviando || alterando || carregandoDetalhe} onClick={() => { setTitulo(ativa.titulo); setEditando(true); setErro(''); if (acoes.current) acoes.current.open = false; }}><Pencil size={16} />Renomear conversa</button><button className="chat-danger" disabled={enviando || alterando || carregandoDetalhe} onClick={() => { setExclusao(ativa); if (acoes.current) acoes.current.open = false; }}><Trash2 size={16} />Excluir conversa</button></div>
           </details>
         </>}
       </header>
@@ -143,6 +143,6 @@ export function Conversas() {
         </div>
       </div>}
     </main>
-    {exclusao && ativa && <ConfirmarExclusao tipo="conversa" nome={ativa.titulo} aoCancelar={() => setExclusao(false)} aoConfirmar={async () => { const versao = contextoVisual.current; if (await excluir(conta, ativa.id) && versao === contextoVisual.current) { nova(); setAviso('Conversa excluída.'); } }} />}
+    {exclusao && <ConfirmarExclusao tipo="conversa" nome={exclusao.titulo} aoCancelar={() => setExclusao(null)} aoConfirmar={async () => { const versao = contextoVisual.current; if (await excluir(conta, exclusao.id) && versao === contextoVisual.current) { if (exclusao.id === id) nova(); else setExclusao(null); setAviso('Conversa excluída.'); } }} />}
   </div>;
 }
