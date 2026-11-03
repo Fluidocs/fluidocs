@@ -378,3 +378,5 @@ opencode.jsonc
 # Configuracoes e artefatos gerados pelo Impeccable e pelo harness local
 .impeccable/
 .harness-local/
+
+docs
