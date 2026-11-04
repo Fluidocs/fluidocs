@@ -11,6 +11,25 @@ function renderizar(evidencias: EvidenciaConversa[]) {
   return renderToStaticMarkup(<MensagensChat mensagens={[{ ...mensagem, evidencias }]} conversaId="7" />);
 }
 
+describe('indicador de resposta em andamento', () => {
+  it('mostra os três pontos após a pergunta enquanto o agente está pensando', () => {
+    const html = renderToStaticMarkup(<MensagensChat mensagens={[{ ...mensagem, papel: 'usuario', conteudo: 'Qual é o prazo?' }]} conversaId="nova" enviando />);
+    expect(html).toContain('role="status"');
+    expect(html).toContain('O agente está pensando…');
+    expect(html).toContain('<span>.</span><span>.</span><span>.</span>');
+    expect(html.indexOf('Qual é o prazo?')).toBeLessThan(html.indexOf('chat-pensando'));
+    expect(html).not.toContain('Copiar resposta');
+  });
+
+  it('remove o indicador ao encerrar o envio e mostra a resposta normalmente', () => {
+    const html = renderToStaticMarkup(<MensagensChat mensagens={[mensagem]} conversaId="7" enviando={false} />);
+    expect(html).not.toContain('chat-pensando');
+    expect(html).not.toContain('O agente está pensando');
+    expect(html).toContain(mensagem.conteudo);
+    expect(html).toContain('Copiar resposta');
+  });
+});
+
 describe('referências nas mensagens do agente', () => {
   it('exibe e conta apenas os arquivos que possuem trecho', () => {
     const html = renderizar([

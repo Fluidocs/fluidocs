@@ -140,6 +140,12 @@
 .chat-mensagem-texto p + p { margin-top: 16px; }
 .chat-assistente-identidade { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; margin-bottom: 14px; }
 .chat-assistente-identidade img { width: 20px; height: 24px; object-fit: contain; }
+.chat-pensando { display: inline-flex; gap: 4px; color: var(--chat-muted); font-size: 28px; line-height: 1; padding-bottom: 8px; }
+.chat-pensando > span { animation: chat-pensando 1.2s ease-in-out infinite; }
+.chat-pensando > span:nth-child(2) { animation-delay: .2s; }
+.chat-pensando > span:nth-child(3) { animation-delay: .4s; }
+@keyframes chat-pensando { 0%, 60%, 100% { opacity: .4; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .chat-pensando > span { animation: none; } }
 .chat-evidencias { margin-top: 20px; }
 .chat-evidencias > summary { display: inline-flex; align-items: center; gap: 8px; color: var(--chat-muted); font-size: 11px; border: 1px solid var(--chat-line); border-radius: 7px; padding: 7px 10px; min-height: 34px; list-style: none; }
 .chat-evidencias summary::-webkit-details-marker { display: none; }

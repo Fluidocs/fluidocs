@@ -4,7 +4,7 @@ import { Check, MessageSquare, MoreHorizontal, PanelLeftOpen, Pencil, SquarePen,
 import { useAutenticacaoStore } from '../store/useAutenticacaoStore';
 import { identificarConta } from '../store/useGerenciamentoStore';
 import { useFontesConsumoStore } from '../store/useFontesDadosStore';
-import { useConsumoStore, type ConversaConsumo } from '../store/useConsumoStore';
+import { useConsumoStore, type ConversaConsumo, type MensagemConsumo } from '../store/useConsumoStore';
 import { extrairMensagemErro } from '../services/api';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
 import { BarraLateralChat } from '../components/chat/BarraLateralChat';
@@ -26,6 +26,9 @@ export function Conversas() {
   const ativa = minhasConversas.find(c => c.id === id);
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const [entrada, setEntrada] = useState('');
+  const [envioPendente, setEnvioPendente] = useState<{ conversaId: string | null; mensagem: MensagemConsumo } | null>(null);
+  const perguntaPendente = enviando && envioPendente?.conversaId === id ? envioPendente.mensagem : undefined;
+  const emConversa = !!ativa || !!perguntaPendente;
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const [historicoAberto, setHistoricoAberto] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
   const [erro, setErro] = useState('');
@@ -62,6 +65,7 @@ export function Conversas() {
   function fecharHistorico() { setHistoricoAberto(false); requestAnimationFrame(() => historicoBotao.current?.focus()); }
   function nova() {
     contextoVisual.current++;
+    setEnvioPendente(null);
     setParametros({}); setSelecionadas([]); setEntrada(''); setErro(''); setAviso(''); setEditando(false); setExclusao(null);
     if (mobile) setHistoricoAberto(false);
     requestAnimationFrame(() => campo.current?.focus());
@@ -77,6 +81,7 @@ export function Conversas() {
     if (bloqueado || !entrada.trim()) return;
     const versao = contextoVisual.current;
     setErro(''); setAviso('');
+    setEnvioPendente({ conversaId: id, mensagem: { id: 'pergunta-pendente', papel: 'usuario', conteudo: entrada.trim(), criadoEm: new Date().toISOString(), evidencias: [] } });
     try {
       if (ativa) {
         if (!await enviar(conta, ativa.id, fontes, entrada, idsValidos)) return;
@@ -90,6 +95,8 @@ export function Conversas() {
       requestAnimationFrame(() => campo.current?.focus());
     } catch (e) {
       if (versao === contextoVisual.current) setErro(extrairMensagemErro(e, 'Não foi possível enviar. Tente novamente.'));
+    } finally {
+      setEnvioPendente(null);
     }
   }
   async function salvarTitulo(e: FormEvent) {
@@ -130,16 +137,15 @@ export function Conversas() {
       {erroLeitura && <div className="chat-alerta" role="alert">{erroLeitura}<button disabled={carregando || enviando || alterando} onClick={() => void carregar()}>Recarregar conversas</button></div>}
       {id && erroDetalhe && <div className="chat-alerta" role="alert">{erroDetalhe}<button onClick={() => void detalhar(id, true)}>Recarregar mensagens</button></div>}
       {editando && <form className="chat-renomear" onSubmit={salvarTitulo} aria-busy={alterando}><label htmlFor="chat-titulo">Título da conversa</label><div><input id="chat-titulo" autoFocus required maxLength={255} disabled={alterando} value={titulo} onChange={e => setTitulo(e.target.value)} /><button disabled={alterando} className="chat-icon" aria-label={alterando ? 'Salvando título' : 'Salvar título'}><Check size={18} /></button><button disabled={alterando} className="chat-icon" type="button" aria-label="Cancelar renomeação" onClick={() => { setEditando(false); setErro(''); }}><X size={18} /></button></div>{erro && <p role="alert">{erro}</p>}</form>}
-      {carregandoDetalhe ? <div className="chat-indisponivel" role="status"><MessageSquare size={28} /><p>Carregando mensagens…</p></div> : id && !ativa ? <div className="chat-indisponivel"><MessageSquare size={28} /><h1>Conversa indisponível</h1><p>Escolha uma conversa do histórico ou comece outra.</p><button className="chat-primary" onClick={nova}>Nova conversa</button></div> : <div className={`chat-corpo${ativa ? ' chat-em-andamento' : ' chat-inicial'}`}>
-        {ativa ? <MensagensChat mensagens={ativa.mensagens} conversaId={ativa.id} /> : <div className="chat-boas-vindas"><h1>Vamos conversar com<br />seus documentos.</h1><p>O conhecimento já está nas suas fontes.<br className="chat-quebra-mobile" /> Encontre as respostas aqui.</p></div>}
+      {carregandoDetalhe ? <div className="chat-indisponivel" role="status"><MessageSquare size={28} /><p>Carregando mensagens…</p></div> : id && !ativa ? <div className="chat-indisponivel"><MessageSquare size={28} /><h1>Conversa indisponível</h1><p>Escolha uma conversa do histórico ou comece outra.</p><button className="chat-primary" onClick={nova}>Nova conversa</button></div> : <div className={`chat-corpo${emConversa ? ' chat-em-andamento' : ' chat-inicial'}`}>
+        {emConversa ? <MensagensChat mensagens={[...(ativa?.mensagens ?? []), ...(perguntaPendente ? [perguntaPendente] : [])]} conversaId={ativa?.id ?? 'nova'} enviando={!!perguntaPendente} /> : <div className="chat-boas-vindas"><h1>Vamos conversar com<br />seus documentos.</h1><p>O conhecimento já está nas suas fontes.<br className="chat-quebra-mobile" /> Encontre as respostas aqui.</p></div>}
         <div className="chat-area-compositor">
           {fonteIndisponivel && <p className="chat-alerta" role="alert">Uma fonte foi excluída. Inicie outra conversa para selecionar novas fontes.</p>}
           {fontesAntigas && <p className="chat-alerta" role="alert">As fontes desta conversa não estão salvas neste navegador e a API não informa a seleção original. Inicie outra conversa para continuar.</p>}
-          {enviando && <p className="chat-status" role="status">Consultando seus documentos e preparando a resposta…</p>}
           {erro && !editando && <p className="chat-alerta" role="alert">{erro}</p>}
           <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} enviando={enviando} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={fontesFixas} desabilitarFontes={enviando || alterando || carregandoFontes || !!erroFontes || !!erroLeitura} />
-          {!ativa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} disabled={enviando || alterando} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
-          <p className="chat-rodape">{ativa ? 'Confira as fontes. Respostas podem conter imprecisões.' : 'Selecione suas fontes de dados para começar.'}</p>
+          {!emConversa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} disabled={enviando || alterando} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
+          <p className="chat-rodape">{emConversa ? 'Confira as fontes. Respostas podem conter imprecisões.' : 'Selecione suas fontes de dados para começar.'}</p>
         </div>
       </div>}
     </main>

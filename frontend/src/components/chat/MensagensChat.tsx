@@ -3,11 +3,11 @@ import { ArrowDown, Check, ChevronDown, Copy, FileText } from 'lucide-react';
 import type { MensagemConsumo } from '../../store/useConsumoStore';
 import logo from '../../assets/acme-logo.svg';
 
-export function MensagensChat({ mensagens, conversaId }: { mensagens: MensagemConsumo[]; conversaId: string }) {
+export function MensagensChat({ mensagens, conversaId, enviando = false }: { mensagens: MensagemConsumo[]; conversaId: string; enviando?: boolean }) {
   const painel = useRef<HTMLDivElement>(null);
   const [longeDoFim, setLongeDoFim] = useState(false);
-  useEffect(() => { if (painel.current) { painel.current.scrollTop = painel.current.scrollHeight; setLongeDoFim(false); } }, [conversaId, mensagens.length]);
-  return <div className="chat-transcript-wrap"><div ref={painel} className="chat-transcript" role="region" aria-label="Mensagens da conversa" tabIndex={0} onScroll={e => { const p = e.currentTarget; setLongeDoFim(p.scrollHeight - p.scrollTop - p.clientHeight > 160); }}><div className="chat-transcript-conteudo">{mensagens.map(m => <MensagemChat key={m.id} mensagem={m} />)}</div></div>{longeDoFim && <button className="chat-ir-fim chat-icon" aria-label="Ir para a última mensagem" onClick={() => painel.current?.scrollTo({ top: painel.current.scrollHeight, behavior: 'instant' })}><ArrowDown size={18} /></button>}</div>;
+  useEffect(() => { if (painel.current) { painel.current.scrollTop = painel.current.scrollHeight; setLongeDoFim(false); } }, [conversaId, mensagens.length, enviando]);
+  return <div className="chat-transcript-wrap"><div ref={painel} className="chat-transcript" role="region" aria-label="Mensagens da conversa" tabIndex={0} onScroll={e => { const p = e.currentTarget; setLongeDoFim(p.scrollHeight - p.scrollTop - p.clientHeight > 160); }}><div className="chat-transcript-conteudo">{mensagens.map(m => <MensagemChat key={m.id} mensagem={m} />)}{enviando && <div className="chat-mensagem chat-mensagem-assistente" role="status"><div className="chat-assistente-identidade" aria-hidden="true"><img src={logo} alt="" /><span>Acme</span></div><span className="chat-sr-only">O agente está pensando…</span><span className="chat-pensando" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></div>}</div></div>{longeDoFim && <button className="chat-ir-fim chat-icon" aria-label="Ir para a última mensagem" onClick={() => painel.current?.scrollTo({ top: painel.current.scrollHeight, behavior: 'instant' })}><ArrowDown size={18} /></button>}</div>;
 }
 
 function MensagemChat({ mensagem: m }: { mensagem: MensagemConsumo }) {
