@@ -6,6 +6,7 @@ import { identificarConta } from '../store/useGerenciamentoStore';
 import { useFontesConsumoStore } from '../store/useFontesDadosStore';
 import { useConsumoStore, type ConversaConsumo, type MensagemConsumo } from '../store/useConsumoStore';
 import { extrairMensagemErro } from '../services/api';
+import { atualizarSelecaoFontes } from '../utils/selecaoFontes';
 import { ConfirmarExclusao } from '../components/gerenciamento/ConfirmarExclusao';
 import { BarraLateralChat } from '../components/chat/BarraLateralChat';
 import { CompositorChat } from '../components/chat/CompositorChat';
@@ -54,7 +55,7 @@ export function Conversas() {
     return () => { contextoVisual.current++; };
   }, [id]);
   useEffect(() => { if (id && !carregando && !enviando && !alterando) void detalhar(id); }, [id, carregando, enviando, alterando, ativa?.detalhada, detalhar]);
-  useEffect(() => { setSelecionadas(ids => ids.filter(fid => fontes.some(f => f.id === fid && f.conta === conta))); }, [fontes, conta]);
+  useEffect(() => { setSelecionadas(ids => atualizarSelecaoFontes(fontes.filter(f => f.conta === conta), ids)); }, [fontes, conta]);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 760px)');
     const adaptar = () => { setMobile(media.matches); setHistoricoAberto(!media.matches); };
@@ -66,7 +67,7 @@ export function Conversas() {
   function nova() {
     contextoVisual.current++;
     setEnvioPendente(null);
-    setParametros({}); setSelecionadas([]); setEntrada(''); setErro(''); setAviso(''); setEditando(false); setExclusao(null);
+    setParametros({}); setSelecionadas(atualizarSelecaoFontes(minhasFontes, [])); setEntrada(''); setErro(''); setAviso(''); setEditando(false); setExclusao(null);
     if (mobile) setHistoricoAberto(false);
     requestAnimationFrame(() => campo.current?.focus());
   }
@@ -144,7 +145,6 @@ export function Conversas() {
           {fontesAntigas && <p className="chat-alerta" role="alert">As fontes desta conversa não estão salvas neste navegador e a API não informa a seleção original. Inicie outra conversa para continuar.</p>}
           {erro && !editando && <p className="chat-alerta" role="alert">{erro}</p>}
           <CompositorChat campo={campo} entrada={entrada} aoMudar={setEntrada} aoEnviar={enviarPergunta} bloqueado={bloqueado} enviando={enviando} fontes={minhasFontes} selecionadas={idsValidos} aoSelecionar={setSelecionadas} fontesFixas={fontesFixas} desabilitarFontes={enviando || alterando || carregandoFontes || !!erroFontes || !!erroLeitura} />
-          {!emConversa && <div className="chat-sugestoes" aria-label="Sugestões de perguntas">{['Quais são os benefícios disponíveis?', 'Como funciona a revisão de código?', 'Como publicar uma nova versão?'].map(pergunta => <button key={pergunta} disabled={enviando || alterando} onClick={() => { setEntrada(pergunta); campo.current?.focus(); }}>{pergunta}</button>)}</div>}
           <p className="chat-rodape">{emConversa ? 'Confira as fontes. Respostas podem conter imprecisões.' : 'Selecione suas fontes de dados para começar.'}</p>
         </div>
       </div>}

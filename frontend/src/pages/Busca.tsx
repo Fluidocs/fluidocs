@@ -18,6 +18,7 @@ import { identificarConta } from '../store/useGerenciamentoStore';
 import { useFontesConsumoStore } from '../store/useFontesDadosStore';
 import { useBuscaStore } from '../store/useBuscaStore';
 import { validarFontes, validarPergunta } from '../services/consumoDemo';
+import { atualizarSelecaoFontes } from '../utils/selecaoFontes';
 import { FontesChat } from '../components/chat/FontesChat';
 import { AlternarTema } from '../components/AlternarTema';
 import { TrechosResultadoBusca } from '../components/consumo/TrechosResultadoBusca';
@@ -102,7 +103,7 @@ export function Busca() {
   const idsValidos = selecionadas.filter(id => minhas.some(f => f.id === id));
 
   useEffect(() => {
-    setSelecionadas(ids => ids.filter(id => fontes.some(f => f.id === id && f.conta === conta)));
+    setSelecionadas(ids => atualizarSelecaoFontes(fontes.filter(f => f.conta === conta), ids));
     limpar();
   }, [fontes, conta, limpar]);
 
@@ -132,13 +133,6 @@ export function Busca() {
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível pesquisar. Tente novamente.');
     }
-  }
-
-  function definirExemplo(exemplo: string) {
-    setTermo(exemplo);
-    limpar();
-    setErro('');
-    requestAnimationFrame(() => campo.current?.focus());
   }
 
   return <div className={`chat-app busca-app${navegacaoAberta && !mobile ? ' chat-com-sidebar' : ''}`}>
@@ -174,9 +168,6 @@ export function Busca() {
           </form>
           {(erro || erroPesquisa) && <p role="alert" className="chat-alerta">{erro || erroPesquisa}</p>}
           {pesquisando && <p role="status" className="busca-pesquisando"><LoaderCircle size={18} aria-hidden="true" /><span>pesquisando</span></p>}
-          {!pesquisaIniciada && <div className="chat-sugestoes" aria-label="Sugestões de consulta">
-            {['Benefícios para novos talentos', 'Padrões de revisão de código', 'Como publicar uma nova versão'].map(exemplo => <button key={exemplo} onClick={() => definirExemplo(exemplo)}>{exemplo}</button>)}
-          </div>}
           <p className="chat-rodape">A busca consulta os documentos indexados nas fontes selecionadas.</p>
         </div>
 
