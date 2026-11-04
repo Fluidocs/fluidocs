@@ -13,6 +13,7 @@ class ContextoPesquisa:
 class ConfiguracaoPesquisaHibrida:
     boost_literal: float = 0.4
     boost_vetorial: float = 0.6
+    similaridade_minima: float | None = None
 
     def __post_init__(self) -> None:
         if not 0 <= self.boost_literal <= 1:
@@ -23,6 +24,11 @@ class ConfiguracaoPesquisaHibrida:
         if not 0 <= self.boost_vetorial <= 1:
             raise ValueError(
                 "boost_vetorial deve estar entre 0 e 1."
+            )
+
+        if self.similaridade_minima is not None and not -1 <= self.similaridade_minima <= 1:
+            raise ValueError(
+                "similaridade_minima deve estar entre -1 e 1."
             )
 
         if not isclose(

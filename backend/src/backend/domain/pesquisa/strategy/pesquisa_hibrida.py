@@ -30,24 +30,35 @@ class PesquisaHibrida(BasePesquisaStrategy):
         tamanho: int = 10
     ) -> ResultadoPesquisa:
         offset = (pagina - 1) * tamanho
-
-        params: dict[str, Any] = {
-            'index': self._context.nome_indice,
-            'from_': offset,
-            'size': tamanho,
-            'collapse': self._collapse(),
-            'aggs': self._aggregate()
-        }
+        clausulas = []
 
         if self._config.boost_literal > 0:
-            params['query'] = ( self._construir_busca_literal(pesquisa) )
+            clausulas.append(self._construir_busca_literal(pesquisa))
 
         if self._config.boost_vetorial > 0:
             vetor_pesquisa = await self._embeddings.gerar_consulta(pesquisa)
 
-            params['knn'] = self._construir_busca_vetorial(vetor_pesquisa, offset, tamanho)
+            clausulas.append({ 
+                'knn': self._construir_busca_vetorial(
+                    vetor_pesquisa, 
+                    offset, 
+                    tamanho
+                ) 
+            })
 
-        response = await self._context.client.search(**params)
+        response = await self._context.client.search(
+            index=self._context.nome_indice,
+            from_=offset,
+            size=tamanho,
+            query={
+                'bool': {
+                    'should': clausulas,
+                    'minimum_should_match': 1
+                }
+            },
+            collapse=self._collapse(),
+            aggs=self._aggregate()
+        )
 
         return self._formatar_resultado(
             response,
@@ -106,6 +117,9 @@ class PesquisaHibrida(BasePesquisaStrategy):
             'num_candidates': numero_candidatos,
             'boost': self._config.boost_vetorial
         }
+
+        if self._config.similaridade_minima is not None:
+            busca['similarity'] = self._config.similaridade_minima
 
         filtro = self._filtro_fontes_dados()
         if filtro is not None:

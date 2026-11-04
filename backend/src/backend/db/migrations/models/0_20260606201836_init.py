@@ -14,7 +14,13 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     "data_criacao" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "data_atualizacao" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_usuario_email_73f3f5" ON "usuario" ("email");"""
+CREATE UNIQUE INDEX IF NOT EXISTS "uidx_usuario_email_73f3f5" ON "usuario" ("email");
+CREATE TABLE IF NOT EXISTS "aerich" (
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "version" VARCHAR(255) NOT NULL,
+    "app" VARCHAR(100) NOT NULL,
+    "content" JSONB NOT NULL
+);"""
 
 
 async def downgrade(db: BaseDBAsyncClient) -> str:

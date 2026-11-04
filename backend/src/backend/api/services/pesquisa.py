@@ -68,6 +68,7 @@ class ServicoPesquisa:
         configuracao_hibrida = ConfiguracaoPesquisaHibrida(
             boost_literal=dados.configuracao_hibrida.boost_literal,
             boost_vetorial=dados.configuracao_hibrida.boost_vetorial,
+            similaridade_minima=config.similaridade_minima_vetorial
         )
         
         strategy = self._factory.obter_metodo(
