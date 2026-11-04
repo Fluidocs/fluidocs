@@ -10,15 +10,10 @@
   letter-spacing: -0.03em;
 }
 
-.cadastro-field-help,
-.cadastro-demo-notice {
+.cadastro-field-help {
   color: var(--login-muted);
   font-size: 12px;
   line-height: 1.65;
-}
-
-.cadastro-demo-notice {
-  margin-top: 16px;
 }
 
 .cadastro-page .login-signup {
